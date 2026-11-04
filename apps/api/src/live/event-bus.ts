@@ -1,10 +1,9 @@
 import { EventEmitter } from 'node:events';
-import type { VehicleLiveDto } from '@winou/shared';
+import type { AlertDto, VehicleLiveDto } from '@winou/shared';
 
-export interface LiveBusEvent {
-  orgId: string;
-  vehicle: VehicleLiveDto;
-}
+export type LiveBusEvent =
+  | { orgId: string; kind: 'vehicle'; vehicle: VehicleLiveDto }
+  | { orgId: string; kind: 'alert'; alert: AlertDto };
 
 /**
  * Org-scoped pub/sub for live updates. Subscribers only ever receive events of the org

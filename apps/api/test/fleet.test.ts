@@ -73,14 +73,17 @@ describe('vehicles', () => {
 });
 
 describe('devices', () => {
-  it('validates IMEI format and check digit', async () => {
-    for (const imei of ['12345', '490154203237519', 'abcdefghijklmno']) {
+  it('validates the device ID format (8–20 digits)', async () => {
+    for (const imei of ['12345', 'abcdefghijklmno', '123456789012345678901']) {
       const r = await call(t, 'POST', url('/devices'), { token: c.token, body: { imei } });
       expect(r.status).toBe(400);
     }
     const ok = await call(t, 'POST', url('/devices'), { token: c.token, body: { imei: '49 015420 323751 8' } });
     expect(ok.status).toBe(201);
     expect(ok.body.imei).toBe('490154203237518');
+    // A wrong check digit or a short tracker ID is accepted.
+    expect((await call(t, 'POST', url('/devices'), { token: c.token, body: { imei: '490154203237519' } })).status).toBe(201);
+    expect((await call(t, 'POST', url('/devices'), { token: c.token, body: { imei: '4209951530' } })).status).toBe(201);
   });
 
   it('refuses a duplicate active IMEI', async () => {

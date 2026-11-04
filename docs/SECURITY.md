@@ -24,6 +24,11 @@ Production note: the API must connect as a **non-superuser** role that owns the 
 - Positions and live state are written in system context and are **read-only** for the application role. RLS restricts reads to the current organization.
 - Live WebSocket: the browser gets a 60-second, single-use ticket from an authenticated, permission-checked endpoint and sends it as the **first message** (not in the URL). The socket carries only that organization's events (org-scoped bus plus a second check). Membership is rechecked every minute. Foreign browser origins are refused. Messages over 4 KB are rejected.
 
+## Alerts, rules and zones
+- Rules and zones are read by every member, changed only by owners and managers (`alerts.configure`); alerts are marked handled by owners and managers (`alerts.handle`). Viewers are read-only.
+- A rule can only reference zones and vehicles of its own organization (checked inside the RLS transaction, so other organizations' IDs are simply not found).
+- Alerts are created by the engine in system context and are only readable and markable as handled by the application role; they cannot be deleted. Rule and zone changes and "handled" actions are in the audit log.
+
 ## Input and transport
 - Every body and query is validated with strict Zod schemas (unknown fields are rejected). IDs must be UUIDs, otherwise 404.
 - Body size is limited to 256 KB. Helmet headers are on the API; the web app sets frame, sniffing, referrer and permissions policies.

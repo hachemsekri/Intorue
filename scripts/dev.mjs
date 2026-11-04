@@ -3,6 +3,9 @@
  * `corepack pnpm dev`: starts the local database (unless DATABASE_URL points elsewhere),
  * waits until it accepts connections, then starts the API, the web app and the shared
  * package watchers. Ctrl+C stops everything; the database closes last and cleanly.
+ *
+ * `corepack pnpm preview` (--prod): same, but runs the built, optimised API and web app
+ * (no file watching, no on-demand page compilation). Much faster pages; restart to see code changes.
  */
 import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
@@ -62,4 +65,8 @@ if (localDb) {
   run(['--filter', '@winou/api', 'run', 'db:server'], 'database');
   await waitForPort(5433);
 }
-run(['-r', '--parallel', '--filter', '!@winou/simulator', 'run', 'dev'], 'apps');
+if (process.argv.includes('--prod')) {
+  run(['--filter', '@winou/api', '--filter', '@winou/web', '--parallel', 'run', 'start'], 'apps');
+} else {
+  run(['-r', '--parallel', '--filter', '!@winou/simulator', 'run', 'dev'], 'apps');
+}

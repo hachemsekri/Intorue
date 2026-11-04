@@ -164,3 +164,56 @@ export const vehicleLiveState = pgTable('vehicle_live_state', {
   source: text('source').$type<'device' | 'simulator'>().notNull(),
   updatedAt: ts('updated_at').notNull().defaultNow(),
 });
+
+export const geofences = pgTable('geofences', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  orgId: uuid('org_id').notNull(),
+  name: text('name').notNull(),
+  kind: text('kind').$type<'circle' | 'polygon'>().notNull(),
+  shape: jsonb('shape').$type<Record<string, unknown>>().notNull(),
+  createdAt: ts('created_at').notNull().defaultNow(),
+  updatedAt: ts('updated_at').notNull().defaultNow(),
+});
+
+export const alertRules = pgTable('alert_rules', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  orgId: uuid('org_id').notNull(),
+  type: text('type').$type<import('@winou/shared').AlertType>().notNull(),
+  name: text('name').notNull(),
+  enabled: boolean('enabled').notNull(),
+  severity: text('severity').$type<'urgent' | 'warning'>().notNull(),
+  params: jsonb('params').$type<Record<string, unknown>>().notNull(),
+  vehicleIds: uuid('vehicle_ids').array(),
+  createdBy: uuid('created_by'),
+  createdAt: ts('created_at').notNull().defaultNow(),
+  updatedAt: ts('updated_at').notNull().defaultNow(),
+});
+
+export const alertStates = pgTable(
+  'alert_states',
+  {
+    ruleId: uuid('rule_id').notNull(),
+    vehicleId: uuid('vehicle_id').notNull(),
+    orgId: uuid('org_id').notNull(),
+    state: jsonb('state').$type<Record<string, unknown>>().notNull(),
+    updatedAt: ts('updated_at').notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.ruleId, t.vehicleId] })],
+);
+
+/** geom read/written with raw SQL. */
+export const alerts = pgTable('alerts', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  orgId: uuid('org_id').notNull(),
+  ruleId: uuid('rule_id'),
+  vehicleId: uuid('vehicle_id').notNull(),
+  type: text('type').$type<import('@winou/shared').AlertType>().notNull(),
+  severity: text('severity').$type<'urgent' | 'warning'>().notNull(),
+  occurredAt: ts('occurred_at').notNull(),
+  details: jsonb('details').$type<Record<string, unknown>>().notNull(),
+  status: text('status').$type<'open' | 'handled'>().notNull(),
+  handledBy: uuid('handled_by'),
+  handledAt: ts('handled_at'),
+  note: text('note'),
+  createdAt: ts('created_at').notNull().defaultNow(),
+});

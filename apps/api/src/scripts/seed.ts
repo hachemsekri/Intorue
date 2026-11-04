@@ -10,12 +10,12 @@
  *   personal demo.perso@winou.test     password: DemoWinou2026
  */
 import { imeiWithCheckDigit, parsePlate, type VehicleType } from '@winou/shared';
-import { inArray } from 'drizzle-orm';
+import { inArray, sql } from 'drizzle-orm';
 import { hashPassword } from '../auth/crypto';
 import { loadEnv } from '../config/env';
 import { createDatabase } from '../db/client';
 import { migrate } from '../db/migrate';
-import { auditLog, deviceAssignments, devices, memberships, organizations, users, vehicles } from '../db/schema';
+import { alertRules, auditLog, deviceAssignments, devices, memberships, organizations, users, vehicles } from '../db/schema';
 
 export const DEMO_PASSWORD = 'DemoWinou2026';
 const DEMO_EMAILS = [
@@ -90,12 +90,14 @@ async function main() {
     ]);
 
     let n = 1;
+    const vehicleIds = new Map<string, string>();
     for (const v of FLEET) {
       const plate = parsePlate(v.plate)!;
       const [veh] = await tx
         .insert(vehicles)
         .values({ orgId: biz!.id, type: v.type, name: v.name, make: v.make, model: v.model, plate: plate.normalized, plateFormat: plate.format })
         .returning();
+      vehicleIds.set(v.name, veh!.id);
       // Test IMEIs in a clearly fake range (35 00000 ...), valid Luhn.
       const imei = imeiWithCheckDigit(`350000000000${String(n++).padStart(2, '0')}`);
       const [dev] = await tx
@@ -118,6 +120,39 @@ async function main() {
     await tx.insert(deviceAssignments).values({ orgId: personal!.id, deviceId: pd!.id, vehicleId: pv!.id, createdBy: perso!.id });
 
     await tx.insert(auditLog).values({ orgId: biz!.id, actorUserId: owner!.id, action: 'org.created', targetType: 'organization', targetId: biz!.id, metadata: { seed: true } });
+
+    // Demo zones (approximate shapes) and alert rules matching the simulator scenarios.
+    const circle = async (name: string, lon: number, lat: number, radiusM: number) => {
+      const shape = { kind: 'circle', center: [lon, lat], radiusM };
+      const res = (await tx.execute(sql`
+        insert into geofences (org_id, name, kind, shape, geom)
+        values (${biz!.id}, ${name}, 'circle', ${JSON.stringify(shape)}::jsonb,
+                ST_Buffer(ST_SetSRID(ST_MakePoint(${lon}, ${lat}), 4326)::geography, ${radiusM}, 'quad_segs=16'))
+        returning id`)) as unknown as { rows: { id: string }[] };
+      return res.rows[0]!.id;
+    };
+    const grandTunis = await circle('Grand Tunis', 10.19, 36.83, 16_000);
+    const sidiBou = await circle('Sidi Bou Saïd', 10.3435, 36.8705, 900);
+    await circle('Agence (Les Berges du Lac)', 10.2336, 36.8322, 250);
+    const id = (name: string) => vehicleIds.get(name)!;
+    await tx.insert(alertRules).values([
+      { orgId: biz!.id, type: 'speeding', name: 'Excès de vitesse (110 km/h)', enabled: true, severity: 'warning', params: { limitKmh: 110, minDurationS: 15 }, vehicleIds: null, createdBy: owner!.id },
+      { orgId: biz!.id, type: 'speeding', name: 'Moto en ville (60 km/h)', enabled: true, severity: 'warning', params: { limitKmh: 60, minDurationS: 10 }, vehicleIds: [id('Moto Yamaha')], createdBy: owner!.id },
+      { orgId: biz!.id, type: 'geofence_exit', name: 'Sortie du Grand Tunis', enabled: true, severity: 'warning', params: { geofenceId: grandTunis }, vehicleIds: null, createdBy: owner!.id },
+      { orgId: biz!.id, type: 'geofence_exit', name: 'Trottinette hors de Sidi Bou Saïd', enabled: true, severity: 'warning', params: { geofenceId: sidiBou }, vehicleIds: [id('Trottinette 014')], createdBy: owner!.id },
+      { orgId: biz!.id, type: 'device_offline', name: 'Boîtier hors ligne (15 min)', enabled: true, severity: 'urgent', params: { afterMinutes: 15 }, vehicleIds: null, createdBy: owner!.id },
+      { orgId: biz!.id, type: 'low_battery', name: 'Batterie faible (20 %)', enabled: true, severity: 'warning', params: { thresholdPct: 20 }, vehicleIds: null, createdBy: owner!.id },
+      {
+        orgId: biz!.id,
+        type: 'movement_schedule',
+        name: 'Mouvement hors horaires (7h–20h)',
+        enabled: true,
+        severity: 'urgent',
+        params: { windows: [{ days: [1, 2, 3, 4, 5, 6, 7], start: '07:00', end: '20:00' }], minSpeedKmh: 5 },
+        vehicleIds: [id('Kia Picanto')],
+        createdBy: owner!.id,
+      },
+    ]);
   });
 
   console.log('Demo data created ([DÉMO] organizations). Sign in with demo.owner@winou.test (see src/scripts/seed.ts).');

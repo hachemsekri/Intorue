@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { can, deviceStatus, formatPlate, imeiWithCheckDigit, isValidImei, parsePlate } from './index';
+import { can, createDeviceSchema, deviceStatus, formatPlate, imeiWithCheckDigit, isValidDeviceId, isValidImei, parsePlate } from './index';
 
 describe('plates', () => {
   it.each([
@@ -43,6 +43,14 @@ describe('imei', () => {
     expect(isValidImei('490154203237519')).toBe(false);
     expect(isValidImei('12345')).toBe(false);
   });
+  it('accepts device IDs of 8–20 digits, without requiring the check digit', () => {
+    expect(isValidDeviceId('490154203237519')).toBe(true); // bad check digit, still accepted
+    expect(isValidDeviceId('4209951530')).toBe(true); // 10-digit tracker ID
+    expect(isValidDeviceId('1234567')).toBe(false);
+    expect(isValidDeviceId('123456789012345678901')).toBe(false);
+    expect(createDeviceSchema.parse({ imei: ' 86 123-456 789 0123 ' }).imei).toBe('861234567890123');
+    expect(createDeviceSchema.safeParse({ imei: '86123456789O123' }).success).toBe(false); // letter O
+  });
   it('generates check digits', () => {
     expect(isValidImei(imeiWithCheckDigit('35000000000001'))).toBe(true);
   });
@@ -65,6 +73,11 @@ describe('permissions', () => {
     expect(can('viewer', 'vehicles.write')).toBe(false);
     expect(can('viewer', 'vehicles.read')).toBe(true);
     expect(can('viewer', 'audit.read')).toBe(false);
+    expect(can('viewer', 'alerts.read')).toBe(true);
+    expect(can('viewer', 'alerts.handle')).toBe(false);
+    expect(can('viewer', 'alerts.configure')).toBe(false);
+    expect(can('manager', 'alerts.handle')).toBe(true);
+    expect(can('manager', 'alerts.configure')).toBe(true);
   });
 });
 

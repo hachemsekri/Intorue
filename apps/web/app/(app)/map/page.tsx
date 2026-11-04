@@ -2,10 +2,12 @@
 
 import { VEHICLE_TYPES, type LiveStatus, type VehicleType } from '@winou/shared';
 import dynamic from 'next/dynamic';
-import { useCallback, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
+import { Suspense, useCallback, useMemo, useState } from 'react';
 import { Plate } from '@/components/fleet-bits';
 import { STATUS_COLOR } from '@/components/live-map';
-import { Badge, Button, Chip, DemoBadge, Input, cx } from '@/components/ui';
+import { Badge, Chip, DemoBadge, Input, cx } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
 import { useLiveVehicles, type LiveVehicle } from '@/lib/live';
 import { useSession } from '@/lib/session';
@@ -22,13 +24,23 @@ const TONE: Record<LiveStatus, 'moving' | 'stopped' | 'offline' | 'neutral'> = {
 };
 
 export default function MapPage() {
+  return (
+    <Suspense>
+      <MapView />
+    </Suspense>
+  );
+}
+
+function MapView() {
   const { t, formatRelative } = useI18n();
+  const params = useSearchParams();
   const { org } = useSession();
   const { vehicles, connection, loaded, latestFix } = useLiveVehicles(org.orgId);
   const [q, setQ] = useState('');
   const [type, setType] = useState<VehicleType | 'all'>('all');
   const [status, setStatus] = useState<LiveStatus | 'all'>('all');
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  // ?vehicle=<id> (from an alert's "Voir sur la carte") opens that vehicle.
+  const [selectedId, setSelectedId] = useState<string | null>(params.get('vehicle'));
 
   const counts = useMemo(() => {
     const c = { moving: 0, stopped: 0, offline: 0 };
@@ -208,12 +220,12 @@ function DetailsCard({ v, onClose }: { v: LiveVehicle; onClose: () => void }) {
       ) : (
         <p className="text-muted">{t('map.noPosition')}</p>
       )}
-      <Button className="mt-4 w-full" disabled title={t('map.viewTripSoon')} aria-describedby="trip-soon">
+      <Link
+        href={`/trips?vehicle=${v.vehicleId}`}
+        className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-navy px-4 text-[15px] font-semibold text-white hover:bg-navy-soft"
+      >
         {t('map.viewTrip')}
-      </Button>
-      <p id="trip-soon" className="mt-1.5 text-center text-xs text-muted">
-        {t('map.viewTripSoon')}
-      </p>
+      </Link>
     </div>
   );
 }

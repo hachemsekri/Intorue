@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { ACCOUNT_KINDS, LOCALES, PLATE_FORMATS, RETENTION_DAYS, ROLES, VEHICLE_TYPES } from './enums';
-import { isValidImei } from './devices';
+import { isValidDeviceId } from './devices';
 import { parsePlate } from './plates';
 
 const email = z.string().trim().toLowerCase().email().max(254);
@@ -94,7 +94,7 @@ export const imeiSchema = z
   .string()
   .trim()
   .transform((s) => s.replace(/[\s-]/g, ''))
-  .refine(isValidImei, 'imei.invalid');
+  .refine(isValidDeviceId, 'imei.invalid');
 export const createDeviceSchema = z
   .object({
     imei: imeiSchema,

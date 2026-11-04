@@ -122,7 +122,9 @@ export class LiveSocketHandler {
       }
       unsubscribe = this.bus.subscribe(claims.orgId, (e) => {
         // Defence in depth: the bus is already org-scoped.
-        if (e.orgId === claims.orgId) send({ type: 'vehicle', data: e.vehicle });
+        if (e.orgId !== claims.orgId) return;
+        if (e.kind === 'vehicle') send({ type: 'vehicle', data: e.vehicle });
+        else send({ type: 'alert', data: e.alert });
       });
       recheck = setInterval(() => {
         void this.allowed(claims.userId, claims.orgId).then((ok) => {

@@ -8,6 +8,7 @@ import { LocaleSwitcher } from './locale-switcher';
 import { cx } from './ui';
 import { useI18n, type MessageKey } from '@/lib/i18n';
 import { useSession } from '@/lib/session';
+import { api } from '@/lib/api';
 
 interface NavItem {
   href: string;
@@ -18,8 +19,8 @@ interface NavItem {
 
 const NAV: NavItem[] = [
   { href: '/map', label: 'nav.map' },
-  { href: '/trips', label: 'nav.trips', soon: true },
-  { href: '/alerts', label: 'nav.alerts', soon: true },
+  { href: '/trips', label: 'nav.trips' },
+  { href: '/alerts', label: 'nav.alerts' },
   { href: '/vehicles', label: 'nav.vehicles' },
   { href: '/devices', label: 'nav.devices' },
   { href: '/members', label: 'nav.members', permission: 'members.read' },
@@ -77,10 +78,33 @@ export function Shell({ children }: { children: ReactNode }) {
   );
 }
 
+/** Open alerts, refreshed every 30 s and when the tab regains focus. */
+function useOpenAlerts(orgId: string): number {
+  const [n, setN] = useState(0);
+  const pathname = usePathname();
+  useEffect(() => {
+    let alive = true;
+    const load = () =>
+      api<{ open: number }>(`/orgs/${orgId}/alerts/count`)
+        .then((r) => alive && setN(r.open))
+        .catch(() => {});
+    void load();
+    const id = setInterval(load, 30_000);
+    window.addEventListener('focus', load);
+    return () => {
+      alive = false;
+      clearInterval(id);
+      window.removeEventListener('focus', load);
+    };
+  }, [orgId, pathname]);
+  return n;
+}
+
 function SidebarNav() {
   const { t } = useI18n();
-  const { can } = useSession();
+  const { can, org } = useSession();
   const pathname = usePathname();
+  const openAlerts = useOpenAlerts(org.orgId);
   return (
     <nav aria-label={t('common.menu')} className="flex flex-1 flex-col gap-1.5">
       {NAV.filter((n) => !n.permission || can(n.permission)).map((n) => {
@@ -96,6 +120,11 @@ function SidebarNav() {
             )}
           >
             {t(n.label)}
+            {n.href === '/alerts' && openAlerts > 0 && (
+              <span className="min-w-7 rounded-full bg-[#F28C28] px-2 py-0.5 text-center text-sm font-bold text-navy-deep" aria-label={`${openAlerts}`}>
+                {openAlerts > 99 ? '99+' : openAlerts}
+              </span>
+            )}
             {n.soon && (
               <span className={cx('rounded-full px-2 py-0.5 text-[11px] font-semibold', active ? 'bg-canvas text-muted' : 'bg-navy-soft text-white/60')}>
                 {t('common.soon')}

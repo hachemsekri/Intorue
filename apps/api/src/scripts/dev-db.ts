@@ -17,7 +17,8 @@ import { postgis } from '@electric-sql/pglite-postgis';
 import { PGLiteSocketServer } from '@electric-sql/pglite-socket';
 
 async function main() {
-  const dir = resolve(process.env.PGLITE_DIR ?? './.data/pglite');
+  // Kept at the repository root, outside apps/api, so the API's file watcher never scans it.
+  const dir = resolve(process.env.PGLITE_DIR ?? resolve(__dirname, '../../../../.data/pglite'));
   const port = Number(process.env.PGLITE_PORT ?? 5433);
   mkdirSync(dir, { recursive: true });
 
@@ -42,6 +43,6 @@ async function main() {
 
 main().catch((e) => {
   console.error('[db] Could not start:', e instanceof Error ? e.message : e);
-  console.error('[db] If the data folder is damaged, delete apps/api/.data/pglite and run "corepack pnpm db:seed" again (demo data only).');
+  console.error('[db] If the data folder is damaged, delete .data/pglite and run "corepack pnpm db:seed" again (demo data only).');
   process.exit(1);
 });

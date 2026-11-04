@@ -3,8 +3,8 @@
 Track cars, motorcycles and scooters in Tunisia. Web app (French, Arabic RTL, English), mobile app (Milestone 4), API.
 The brand name lives in one place: `packages/config/src/index.ts`.
 
-> **Status: Milestone 2** (accounts, organizations, roles, vehicles, GPS devices, audit log,
-> device simulator, location data, live map). Trips and alerts come in Milestone 3, mobile in Milestone 4.
+> **Status: Milestone 3** (accounts, organizations, roles, vehicles, GPS devices, audit log, device simulator,
+> live map, trip history, zones, alert rules and alert inbox). Mobile app and push notifications come in Milestone 4.
 > See [docs/PLAN.md](docs/PLAN.md).
 
 ## Repository
@@ -63,7 +63,16 @@ corepack pnpm db:seed
 corepack pnpm sim
 ```
 
-Simulator options: `--interval 5` (seconds between fixes), `--only 3,5` (some vehicles), `--once`.
+Simulator options: `--history 6` (first replay the last 6 hours, so trips and alerts have data),
+`--interval 5` (seconds between fixes), `--only 3,5` (some vehicles), `--once`.
+
+**Faster pages:** `corepack pnpm dev` compiles each page the first time you open it and restarts the API on
+every code change, which is slow on a laptop. To use the app (demo, tests by hand), run the optimised version
+instead. It builds once (about a minute), then pages load instantly. Restart it to see code changes.
+
+```bash
+corepack pnpm preview
+```
 
 **Map with streets** (one-off, about 10 minutes, 70 MB): downloads the Tunisia basemap to `apps/web/public/map/`.
 Without it, the map shows vehicles on a plain background.
@@ -75,13 +84,13 @@ corepack pnpm basemap
 ### Without Docker (default in `.env.example`)
 
 `corepack pnpm dev` first starts a local database server: **PGlite**, real PostgreSQL with PostGIS compiled to
-WebAssembly, listening on `127.0.0.1:5433` and storing its data in `apps/api/.data/pglite`. It runs as its own
+WebAssembly, listening on `127.0.0.1:5433` and storing its data in `.data/pglite`. It runs as its own
 process so API restarts never touch the data folder, and it closes cleanly on Ctrl+C.
 It is for local development only (one query at a time, so `DATABASE_POOL_MAX=1`).
 The API refuses the in-process `pglite:` mode in production; the local server on port 5433 is for development only.
 
 `corepack pnpm db:check` prints row counts, to check the local database opens correctly. If the data folder is ever
-damaged (for example after the PC loses power), stop `dev`, delete `apps/api/.data/pglite`, start `dev` again and
+damaged (for example after the PC loses power), stop `dev`, delete `.data/pglite`, start `dev` again and
 re-run `db:seed`. The folder only holds local development data.
 
 Password-reset and invitation emails are printed in the API console when `SMTP_URL` is empty.
@@ -122,6 +131,9 @@ corepack pnpm test
 | `apps/api/test/auth.test.ts` | Sign-up, sign-in, lockout, CSRF on cookie writes, refresh-token rotation and reuse detection, password reset (single use, 30 min expiry, old sessions revoked), rate limiting |
 | `apps/api/test/fleet.test.ts` | Tunisian plate parsing, duplicates, archive/restore, IMEI validation, one-device-per-vehicle linking, online/offline status, audit entries |
 | `apps/api/test/live.test.ts` | Traccar adapter (knots to km/h, battery, invalid payloads), ingest secret, unknown IMEIs ignored, dedup, late/future fixes, moving/stopped, **live data separation** (API, RLS and WebSocket), WebSocket tickets (single-use, forged, foreign origin, removed member), retention deletion |
+| `apps/api/src/trips/detect.test.ts` | Trip detection: long vs short stops, GPS drift while parked, data gaps, glitches, ongoing trips |
+| `apps/api/src/alerts/evaluate.test.ts` | Each alert rule: thresholds, once per incident, re-arming, zone enter/exit, Tunis time windows incl. midnight |
+| `apps/api/test/alerts.test.ts` | Zones and rules (validation, permissions, other orgs' zones/vehicles refused), alerts created from device data, inbox and "handled", RLS, trips report and its isolation |
 | `apps/simulator/src/engine.test.ts` | Scenarios stay around Tunis, plausible speeds, motorway speeding, stops, disconnections, battery drain, Traccar JSON format |
 | `packages/shared/src/shared.test.ts` | Plates, IMEI Luhn, device status, permission matrix |
 
@@ -133,6 +145,7 @@ Tests run against PGlite by default. To run them against the Docker PostgreSQL, 
 |---|---|
 | `corepack pnpm dev` | Local database, shared packages (watch), API and web together |
 | `corepack pnpm dev:api` | API only |
+| `corepack pnpm preview` | Build once, then run the optimised app (fast pages) |
 | `corepack pnpm sim` | Simulated vehicles ([DÉMO]) |
 | `corepack pnpm db:check` | Check the local database opens, print row counts |
 | `corepack pnpm basemap` | Download or extend the self-hosted Tunisia basemap |

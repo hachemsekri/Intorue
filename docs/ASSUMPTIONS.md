@@ -15,7 +15,7 @@ Decisions taken so work could continue. Each one can be changed. Ask if one is w
 7. Signing up through an invitation joins only that organization; no personal organization is created.
 
 ## Data and devices
-8. **IMEI = 15 digits with a valid Luhn check digit.** If the real device uses another identifier, the validation will be relaxed when the device docs arrive.
+8. **Device ID = 8 to 20 digits** (spaces and dashes ignored). Usually the 15-digit IMEI, but the check digit is not enforced: labels are sometimes misprinted and some trackers report a shorter ID. A typo shows up as "never connected". To confirm with the real device model.
 9. An IMEI can be active in only one organization. Archiving the device frees it.
 10. One device per vehicle, and one vehicle per device. The link history is kept in `device_assignments`, so trips stay attributed to the right vehicle.
 11. A device is **offline** after 10 minutes without data, and **never connected** before its first report.
@@ -48,3 +48,13 @@ Decisions taken so work could continue. Each one can be changed. Ask if one is w
 28. Simulator coordinates are hand-placed along main roads, not snapped to streets. All simulator data is flagged `source = simulator` and shown with a DÉMO label.
 29. The browser opens the live WebSocket directly on the API (`NEXT_PUBLIC_API_WS_URL`), because the Next.js dev proxy does not reliably forward WebSockets.
 30. Arabic map labels use MapLibre's official right-to-left text plugin, self-hosted in `apps/web/public/vendor/` (BSD-2-Clause licence file alongside).
+
+## Milestone 3
+31. **Trips are computed when a report is opened**, from stored positions (no trips table), so they always include late fixes. A trip ends after 5 minutes without movement or 15 minutes without data. Trips that never get 200 m from their start are GPS drift and are ignored. A cached trips table can come later if reports get slow.
+32. **Place names** in the timeline come from the organization's own zones (smallest zone containing the point). Street addresses need a geocoder (for example a self-hosted Photon with Tunisia data): to decide.
+33. **Alerts fire once per incident.** Speeding needs 15 s above the limit (configurable) and re-arms 5 km/h under it. Low battery re-arms 5 points above the threshold. Movement out of hours re-arms after 10 minutes still. Offline re-arms when the device reports again. Zone rules learn the current side on the first fix after a change, without alerting.
+34. Speeding without an explicit limit uses the vehicle's own limit, else 110 km/h. Tunisian legal limits by road type are not modelled.
+35. Allowed hours use Tunis time. A slot that crosses midnight belongs to the day it starts (Friday 22:00 to 06:00 covers Saturday 03:00).
+36. Alerts are evaluated on the vehicle's newest position only; buffered old fixes never trigger alerts.
+37. Severity has two levels, matching the designs: **Urgent** and **À vérifier**.
+38. The alerts badge in the menu refreshes every 30 seconds; the inbox every 20 seconds. Real-time push comes with the mobile app (Milestone 4).

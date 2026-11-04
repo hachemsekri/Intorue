@@ -7,7 +7,9 @@
  *   --target traccar  send to a running Traccar server (OsmAnd protocol, port 5055), which then
  *                     forwards to the API. Requires Traccar (Docker); not tested in this setup yet.
  *
- * Usage:  corepack pnpm sim [--interval 5] [--only 3,5] [--once] [--target api|traccar]
+ * Usage:  corepack pnpm sim [--interval 5] [--only 3,5] [--once] [--history 6] [--target api|traccar]
+ *   --history N  first replays the last N hours (timestamps in the past) so trip history
+ *                and alerts have data right away, then continues live from that state.
  */
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -26,6 +28,7 @@ function args() {
     intervalS: Number(get('interval') ?? 5),
     only: get('only')?.split(',').map((n) => Number(n.trim()) - 1),
     once: a.includes('--once'),
+    historyH: Number(get('history') ?? 0),
     target: (get('target') ?? 'api') as 'api' | 'traccar',
     api: get('api') ?? process.env.SIM_API_URL ?? 'http://localhost:4000',
     traccar: get('traccar') ?? process.env.SIM_TRACCAR_URL ?? 'http://localhost:5055',
@@ -98,6 +101,28 @@ async function main() {
   console.log(`[DÉMO] Simulateur Winou: ${vehicles.length} véhicules simulés, un point toutes les ${o.intervalS} s → ${o.target}`);
   vehicles.forEach((v, i) => console.log(`  ${i + 1}. ${v.scenario.label}  (IMEI ${v.scenario.imei})`));
 
+  if (o.historyH > 0 && o.target === 'api') {
+    const end = Date.now();
+    const start = end - o.historyH * 3600_000;
+    const backlog: SimFix[] = [];
+    let first = true;
+    for (let t = start; t < end; t += o.intervalS * 1000) {
+      for (const v of vehicles) {
+        const f = v.step(first ? 0 : o.intervalS, new Date(t));
+        if (f) backlog.push(f);
+      }
+      first = false;
+    }
+    console.log(`Historique : ${backlog.length} points sur ${o.historyH} h…`);
+    let accepted = 0;
+    for (let i = 0; i < backlog.length; i += 100) {
+      const r = await sendApi(o.api, secret!, backlog.slice(i, i + 100));
+      accepted += r.accepted;
+      if ((i / 100) % 20 === 0) process.stdout.write(`  ${Math.min(i + 100, backlog.length)}/${backlog.length}`);
+    }
+    console.log(`Historique envoyé : ${accepted} points acceptés.          `);
+  }
+
   let stopping = false;
   process.on('SIGINT', () => {
     stopping = true;
@@ -105,7 +130,7 @@ async function main() {
     process.exit(0);
   });
 
-  let first = true;
+  let first = o.historyH <= 0;
   while (!stopping) {
     const now = new Date();
     const fixes = vehicles.map((v) => v.step(first ? 0 : o.intervalS, now)).filter((f): f is SimFix => f !== null);

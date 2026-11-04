@@ -28,7 +28,11 @@ export interface VehicleLiveDto {
 }
 
 /** Live event pushed over the WebSocket. */
-export type LiveEvent = { type: 'vehicle'; data: VehicleLiveDto } | { type: 'hello'; orgId: string } | { type: 'error'; code: string };
+export type LiveEvent =
+  | { type: 'vehicle'; data: VehicleLiveDto }
+  | { type: 'alert'; data: import('./alerts').AlertDto }
+  | { type: 'hello'; orgId: string }
+  | { type: 'error'; code: string };
 
 export function liveStatus(v: Pick<VehicleLiveDto, 'device' | 'position'>, now: Date = new Date(), offlineAfterMinutes = DEFAULT_OFFLINE_AFTER_MINUTES): LiveStatus {
   if (!v.device) return 'no_device';

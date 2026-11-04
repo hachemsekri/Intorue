@@ -14,6 +14,12 @@ export const PERMISSIONS = [
   'devices.read',
   'devices.write',
   'audit.read',
+  /** Alert inbox, alert rules and zones (read). */
+  'alerts.read',
+  /** Mark alerts handled. Viewers cannot. */
+  'alerts.handle',
+  /** Create/edit/delete alert rules and zones. */
+  'alerts.configure',
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
 
@@ -27,8 +33,11 @@ const MATRIX: Record<Role, readonly Permission[]> = {
     'devices.read',
     'devices.write',
     'audit.read',
+    'alerts.read',
+    'alerts.handle',
+    'alerts.configure',
   ],
-  viewer: ['org.read', 'vehicles.read', 'devices.read'],
+  viewer: ['org.read', 'vehicles.read', 'devices.read', 'alerts.read'],
 };
 
 export function can(role: Role, permission: Permission): boolean {

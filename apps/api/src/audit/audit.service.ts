@@ -23,7 +23,14 @@ export type AuditAction =
   | 'device.updated'
   | 'device.archived'
   | 'device.linked'
-  | 'device.unlinked';
+  | 'device.unlinked'
+  | 'zone.created'
+  | 'zone.updated'
+  | 'zone.deleted'
+  | 'alert_rule.created'
+  | 'alert_rule.updated'
+  | 'alert_rule.deleted'
+  | 'alert.handled';
 
 export interface AuditEntry {
   orgId: string | null;

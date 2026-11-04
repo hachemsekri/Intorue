@@ -32,6 +32,11 @@ import { LiveSocketHandler, LiveTickets } from './live/live.socket';
 import { IngestController } from './positions/ingest.controller';
 import { PositionsService } from './positions/positions.service';
 import { RetentionService } from './positions/retention.service';
+import { AlertRulesController, AlertsController, TripsController, ZonesController } from './alerts/alerts.controller';
+import { AlertsService } from './alerts/alerts.service';
+import { AlertEngine } from './alerts/engine';
+import { GeofencesService } from './geofences/geofences.service';
+import { TripsService } from './trips/trips.service';
 
 @Controller('health')
 class HealthController {
@@ -66,6 +71,10 @@ class AppModule {
         DevicesController,
         LiveController,
         IngestController,
+        AlertsController,
+        AlertRulesController,
+        ZonesController,
+        TripsController,
       ],
       providers: [
         { provide: ENV, useValue: deps.env },
@@ -78,6 +87,10 @@ class AppModule {
         LiveSocketHandler,
         PositionsService,
         RetentionService,
+        AlertsService,
+        AlertEngine,
+        GeofencesService,
+        TripsService,
         RateLimiter,
         TokensService,
         AuditService,

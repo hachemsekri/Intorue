@@ -7,6 +7,7 @@ import { CLOCK, DB, type Clock } from '../common/tokens';
 import type { NormalizedPosition } from '../gateway/device-gateway';
 import { EVENT_BUS, type EventBus } from '../live/event-bus';
 import { LiveService } from '../live/live.service';
+import { AlertEngine } from '../alerts/engine';
 
 export interface IngestResult {
   accepted: number;
@@ -32,6 +33,7 @@ export class PositionsService {
     @Inject(CLOCK) private readonly clock: Clock,
     @Inject(EVENT_BUS) private readonly bus: EventBus,
     private readonly live: LiveService,
+    private readonly engine: AlertEngine,
   ) {}
 
   async ingest(batch: NormalizedPosition[]): Promise<IngestResult> {
@@ -85,7 +87,7 @@ export class PositionsService {
         returning id`)) as unknown as { rows: unknown[] };
       await tx.update(devices).set(touch).where(eq(devices.id, dev.id));
       if (inserted.rows.length === 0) return 'duplicates' as const;
-      if (!dev.vehicleId) return 'accepted' as const;
+      if (!dev.vehicleId) return 'stored' as const;
 
       const [prev] = await tx
         .select()
@@ -93,7 +95,7 @@ export class PositionsService {
         .where(eq(vehicleLiveState.vehicleId, dev.vehicleId))
         .for('update');
       // Late (buffered) fixes are stored but never move the live marker backwards.
-      if (prev && prev.recordedAt > p.recordedAt) return 'accepted' as const;
+      if (prev && prev.recordedAt > p.recordedAt) return 'stored' as const;
 
       const moving = p.speedKmh >= MOVING_SPEED_KMH;
       const wasMoving = prev ? prev.speedKmh >= MOVING_SPEED_KMH : false;
@@ -110,13 +112,18 @@ export class PositionsService {
           speed_kmh = excluded.speed_kmh, heading = excluded.heading, ignition = excluded.ignition,
           moving_since = excluded.moving_since, stopped_since = excluded.stopped_since,
           source = excluded.source, updated_at = excluded.updated_at`);
-      return 'accepted' as const;
+      return 'latest' as const;
     });
 
-    if (dev.vehicleId && outcome === 'accepted') {
+    if (outcome === 'duplicates') return outcome;
+    if (dev.vehicleId && outcome === 'latest') {
       const vehicle = await this.live.vehicle(this.db.system, dev.orgId, dev.vehicleId);
-      if (vehicle) this.bus.publish({ orgId: dev.orgId, vehicle });
+      if (vehicle) this.bus.publish({ orgId: dev.orgId, kind: 'vehicle', vehicle });
+      // Alert rules follow the vehicle's newest position only (late fixes never re-trigger).
+      await this.engine
+        .onPosition(dev.orgId, dev.vehicleId, { at: p.recordedAt, lat: p.lat, lon: p.lon, speedKmh: p.speedKmh, batteryPct: p.batteryPct })
+        .catch((e) => this.logger.error(`Alert evaluation failed: ${(e as Error).message}`));
     }
-    return outcome;
+    return 'accepted';
   }
 }

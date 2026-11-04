@@ -1,6 +1,15 @@
 import { DEFAULT_OFFLINE_AFTER_MINUTES, type DeviceStatus } from './enums';
 
-/** IMEI: 15 digits with a valid Luhn check digit. */
+/**
+ * Device identifier as entered by the customer: 8–20 digits (spaces and dashes ignored).
+ * Usually the 15-digit IMEI, but some trackers report a shorter ID (e.g. 10 or 12 digits),
+ * and labels are sometimes printed without the check digit, so the Luhn check is not enforced.
+ */
+export function isValidDeviceId(id: string): boolean {
+  return /^\d{8,20}$/.test(id);
+}
+
+/** IMEI: 15 digits with a valid Luhn check digit (used by the simulator and as a hint). */
 export function isValidImei(imei: string): boolean {
   if (!/^\d{15}$/.test(imei)) return false;
   let sum = 0;

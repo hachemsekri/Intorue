@@ -7,7 +7,12 @@
     "typeCheck": false,
     "deleteOutDir": true,
     "tsConfigPath": "tsconfig.build.json",
-    "assets": [{ "include": "migrations/*.sql", "outDir": "dist/src" }],
-    "watchAssets": true
+    "assets": [
+      {
+        "include": "migrations/*.sql",
+        "outDir": "dist/src"
+      }
+    ],
+    "watchAssets": false
   }
 }
