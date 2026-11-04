@@ -1,4 +1,10 @@
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
 import type { NextConfig } from 'next';
+
+// Use the repo-root .env (one config file for the whole monorepo).
+const rootEnv = resolve(__dirname, '../../.env');
+if (existsSync(rootEnv)) process.loadEnvFile(rootEnv);
 
 const API = process.env.API_INTERNAL_URL ?? 'http://localhost:4000';
 

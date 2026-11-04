@@ -3,14 +3,16 @@
 Track cars, motorcycles and scooters in Tunisia. Web app (French, Arabic RTL, English), mobile app (Milestone 4), API.
 The brand name lives in one place: `packages/config/src/index.ts`.
 
-> **Status: Milestone 1** (accounts, organizations, roles, vehicles, GPS devices, audit log).
-> Live map, simulator, trips, alerts and mobile come in Milestones 2 to 4. See [docs/PLAN.md](docs/PLAN.md).
+> **Status: Milestone 2** (accounts, organizations, roles, vehicles, GPS devices, audit log,
+> device simulator, location data, live map). Trips and alerts come in Milestone 3, mobile in Milestone 4.
+> See [docs/PLAN.md](docs/PLAN.md).
 
 ## Repository
 
 ```
 apps/api        NestJS (Fastify) REST API: auth, organizations, vehicles, devices, audit log
 apps/web        Next.js web app (proxies /api to the API so auth cookies stay first-party)
+apps/simulator  Simulated GPS devices around Tunis (SAMPLE DATA), sent through the device adapter
 packages/shared Types, Zod validation schemas, roles/permissions, Tunisian plates, IMEI
 packages/i18n   fr (default), ar (RTL), en messages
 packages/config Brand name/colours, map provider registry
@@ -22,7 +24,9 @@ docs/           Plan, assumptions, map services, legal review list, security not
 
 - Node.js 22 or later (tested with 24)
 - pnpm through Corepack, which ships with Node. Every command below uses `corepack pnpm …`, so no global install is needed.
-- Docker Desktop: **optional for Milestone 1**, required from Milestone 2 (Traccar, PostGIS).
+- Docker Desktop: **optional**. Without it, the project runs on PGlite (embedded PostgreSQL with PostGIS),
+  in-memory live updates, and the simulator posting straight to the device adapter. A real GPS device test
+  (Milestone 5) needs Traccar on a server reachable from the internet.
 
 ## First run
 
@@ -54,6 +58,15 @@ corepack pnpm dev
 
 - Web app: http://localhost:3000
 - API: http://localhost:4000/api/health
+
+Then, in a second terminal, start the simulated vehicles and open **Carte en direct**:
+
+```bash
+corepack pnpm sim
+```
+
+The simulator needs `INGEST_SECRET` in `.env` (same value for the API and the simulator).
+Options: `--interval 5` (seconds between fixes), `--only 3,5` (some vehicles), `--once`.
 
 ### Without Docker (default in `.env.example`)
 
@@ -98,6 +111,8 @@ corepack pnpm test
 | `apps/api/test/permissions.test.ts` | Full owner / manager / viewer matrix; invitations (single use, expiry, email match, revoke); last-owner protection; removed members lose access immediately |
 | `apps/api/test/auth.test.ts` | Sign-up, sign-in, lockout, CSRF on cookie writes, refresh-token rotation and reuse detection, password reset (single use, 30 min expiry, old sessions revoked), rate limiting |
 | `apps/api/test/fleet.test.ts` | Tunisian plate parsing, duplicates, archive/restore, IMEI validation, one-device-per-vehicle linking, online/offline status, audit entries |
+| `apps/api/test/live.test.ts` | Traccar adapter (knots to km/h, battery, invalid payloads), ingest secret, unknown IMEIs ignored, dedup, late/future fixes, moving/stopped, **live data separation** (API, RLS and WebSocket), WebSocket tickets (single-use, forged, foreign origin, removed member), retention deletion |
+| `apps/simulator/src/engine.test.ts` | Scenarios stay around Tunis, plausible speeds, motorway speeding, stops, disconnections, battery drain, Traccar JSON format |
 | `packages/shared/src/shared.test.ts` | Plates, IMEI Luhn, device status, permission matrix |
 
 Tests run against PGlite by default. To run them against the Docker PostgreSQL, set `TEST_DATABASE_URL`.
@@ -108,6 +123,7 @@ Tests run against PGlite by default. To run them against the Docker PostgreSQL, 
 |---|---|
 | `corepack pnpm dev` | Shared packages (watch), API and web together |
 | `corepack pnpm dev:api` | API only |
+| `corepack pnpm sim` | Simulated vehicles ([DÉMO]) |
 | `corepack pnpm typecheck` | TypeScript across the repo |
 | `corepack pnpm db:migrate` | Apply SQL migrations (`apps/api/src/migrations`) |
 | `corepack pnpm infra:up` / `infra:down` | Start / stop Docker services |
@@ -119,6 +135,8 @@ Tests run against PGlite by default. To run them against the Docker PostgreSQL, 
 - Passwords use argon2id. Access tokens last 15 minutes. Refresh tokens rotate and are stored hashed; reusing an old one revokes the whole session.
 - Rate limits apply on sign-in, sign-up and reset, with temporary lockout after repeated failures.
 - The audit log records sensitive actions (device linking, roles, archive…).
+- Device data enters only through `POST /api/ingest/traccar`, protected by `INGEST_SECRET`. A fix is attributed to an organization only through the registered IMEI; unknown IMEIs are ignored.
+- The live WebSocket opens with a single-use, 60-second ticket sent as the first message (never in the URL), carries only one organization's events, and rechecks membership every minute.
 - There are **no commands to devices**. Engine cut-off is out of scope by design.
 
 More detail: [docs/SECURITY.md](docs/SECURITY.md).

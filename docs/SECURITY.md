@@ -18,6 +18,12 @@
 
 Production note: the API must connect as a **non-superuser** role that owns the tables and is granted `winou_app`, so that RLS stays active inside tenant transactions.
 
+## Device data and live updates
+- `POST /api/ingest/traccar` is for the device gateway only. It needs the `x-ingest-secret` header (constant-time comparison) and is disabled when `INGEST_SECRET` is unset. In production, expose it only on the internal network between Traccar and the API.
+- A fix is attributed to an organization **only through the IMEI** of a registered, active device. Unknown IMEIs are counted and ignored, never auto-registered.
+- Positions and live state are written in system context and are **read-only** for the application role. RLS restricts reads to the current organization.
+- Live WebSocket: the browser gets a 60-second, single-use ticket from an authenticated, permission-checked endpoint and sends it as the **first message** (not in the URL). The socket carries only that organization's events (org-scoped bus plus a second check). Membership is rechecked every minute. Foreign browser origins are refused. Messages over 4 KB are rejected.
+
 ## Input and transport
 - Every body and query is validated with strict Zod schemas (unknown fields are rejected). IDs must be UUIDs, otherwise 404.
 - Body size is limited to 256 KB. Helmet headers are on the API; the web app sets frame, sniffing, referrer and permissions policies.
@@ -30,10 +36,10 @@ Production note: the API must connect as a **non-superuser** role that owns the 
 
 ## Privacy
 - Location data is never sold or shared. No analytics or third-party SDK receives location data.
-- Retention is configurable per organization. Automatic deletion ships with location storage in Milestone 2.
+- Retention is configurable per organization. Positions older than the setting are deleted every hour.
 - There are no device commands, and no engine cut-off.
 
 ## Known gaps (planned)
-- Rate limits are per process (memory). Milestone 2 moves them to Redis.
+- Rate limits and the live event bus are per process (memory). Redis is needed before running several API instances.
 - No email verification at sign-up yet. To be added with the production SMTP provider.
 - No 2FA yet. Recommended for owners of business accounts.

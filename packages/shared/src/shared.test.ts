@@ -67,3 +67,19 @@ describe('permissions', () => {
     expect(can('viewer', 'audit.read')).toBe(false);
   });
 });
+
+describe('live status', () => {
+  const now = new Date('2026-11-04T12:00:00Z');
+  const device = (lastSeenAt: string | null) => ({ id: 'd', imei: '1', lastSeenAt, batteryPct: null });
+  const position = (speedKmh: number) => ({
+    lat: 36.8, lon: 10.18, speedKmh, heading: null, recordedAt: '2026-11-04T11:59:00Z', ignition: null, movingSince: null, stoppedSince: null, source: 'device' as const,
+  });
+  it('derives moving, stopped, offline, never and no_device', async () => {
+    const { liveStatus } = await import('./live');
+    expect(liveStatus({ device: null, position: null }, now)).toBe('no_device');
+    expect(liveStatus({ device: device(null), position: null }, now)).toBe('never');
+    expect(liveStatus({ device: device('2026-11-04T11:59:30Z'), position: position(42) }, now)).toBe('moving');
+    expect(liveStatus({ device: device('2026-11-04T11:59:30Z'), position: position(1) }, now)).toBe('stopped');
+    expect(liveStatus({ device: device('2026-11-04T11:40:00Z'), position: position(42) }, now)).toBe('offline');
+  });
+});

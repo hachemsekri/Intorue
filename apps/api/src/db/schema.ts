@@ -2,7 +2,7 @@
  * Drizzle table definitions used for typed queries.
  * The source of truth for DDL (constraints, RLS, indexes) is src/migrations/*.sql.
  */
-import { bigint, boolean, integer, jsonb, pgTable, primaryKey, smallint, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { bigint, boolean, integer, jsonb, pgTable, primaryKey, real, smallint, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 
 const ts = (name: string) => timestamp(name, { withTimezone: true, mode: 'date' });
 
@@ -130,4 +130,37 @@ export const auditLog = pgTable('audit_log', {
   metadata: jsonb('metadata').$type<Record<string, unknown>>().notNull().default({}),
   ip: text('ip'),
   at: ts('at').notNull().defaultNow(),
+});
+
+/** geom columns are read/written with raw SQL (ST_MakePoint / ST_X / ST_Y). */
+export const positions = pgTable('positions', {
+  id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
+  orgId: uuid('org_id').notNull(),
+  deviceId: uuid('device_id').notNull(),
+  vehicleId: uuid('vehicle_id'),
+  recordedAt: ts('recorded_at').notNull(),
+  receivedAt: ts('received_at').notNull().defaultNow(),
+  speedKmh: real('speed_kmh').notNull(),
+  heading: smallint('heading'),
+  altitudeM: real('altitude_m'),
+  accuracyM: real('accuracy_m'),
+  satellites: smallint('satellites'),
+  ignition: boolean('ignition'),
+  batteryPct: smallint('battery_pct'),
+  attrs: jsonb('attrs').$type<Record<string, unknown>>().notNull().default({}),
+  source: text('source').$type<'device' | 'simulator'>().notNull(),
+});
+
+export const vehicleLiveState = pgTable('vehicle_live_state', {
+  vehicleId: uuid('vehicle_id').primaryKey(),
+  orgId: uuid('org_id').notNull(),
+  deviceId: uuid('device_id').notNull(),
+  recordedAt: ts('recorded_at').notNull(),
+  speedKmh: real('speed_kmh').notNull(),
+  heading: smallint('heading'),
+  ignition: boolean('ignition'),
+  movingSince: ts('moving_since'),
+  stoppedSince: ts('stopped_since'),
+  source: text('source').$type<'device' | 'simulator'>().notNull(),
+  updatedAt: ts('updated_at').notNull().defaultNow(),
 });

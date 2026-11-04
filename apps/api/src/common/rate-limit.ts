@@ -3,11 +3,11 @@ import { Reflector } from '@nestjs/core';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { ENV, type Env } from '../config/env';
 import { AppError } from './errors';
-import { RATE_LIMIT, type RateLimitBucket } from './decorators';
+import { RATE_LIMIT, SKIP_GLOBAL_RATE_LIMIT, type RateLimitBucket } from './decorators';
 
 /**
  * Fixed-window counters in memory.
- * TODO(M2): move to Redis so limits hold across several API instances.
+ * TODO(prod): move to Redis so limits hold across several API instances.
  */
 @Injectable()
 export class RateLimiter {
@@ -51,7 +51,8 @@ export class RateLimitGuard implements CanActivate {
     const req = ctx.switchToHttp().getRequest<FastifyRequest>();
     const reply = ctx.switchToHttp().getResponse<FastifyReply>();
     const ip = req.ip;
-    if (!this.limiter.hit(`global:${ip}`, this.env.RATE_LIMIT_GLOBAL_PER_MIN, 60_000)) {
+    const skip = this.reflector.getAllAndOverride<boolean>(SKIP_GLOBAL_RATE_LIMIT, [ctx.getHandler(), ctx.getClass()]);
+    if (!skip && !this.limiter.hit(`global:${ip}`, this.env.RATE_LIMIT_GLOBAL_PER_MIN, 60_000)) {
       void reply.header('retry-after', '60');
       throw new AppError(429, 'rate_limited');
     }

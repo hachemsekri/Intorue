@@ -31,7 +31,7 @@ function InvitationForm() {
     setError(null);
     try {
       await api('/invitations/accept', { method: 'POST', body: { token } });
-      window.location.href = '/vehicles';
+      window.location.href = '/map';
     } catch (err) {
       setError(errorText(err).message);
       setBusy(false);
@@ -55,7 +55,7 @@ function InvitationForm() {
           locale,
         },
       });
-      window.location.href = '/vehicles';
+      window.location.href = '/map';
     } catch (err) {
       const r = errorText(err);
       setError(r.message);

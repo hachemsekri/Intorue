@@ -33,7 +33,7 @@ export default function SignupPage() {
           locale,
         },
       });
-      window.location.href = '/vehicles';
+      window.location.href = '/map';
     } catch (err) {
       const { message, fields } = errorText(err);
       setError(message);

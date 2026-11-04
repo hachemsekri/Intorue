@@ -32,6 +32,10 @@ export type RateLimitBucket = 'auth' | 'public';
 /** Stricter per-IP limit on top of the global one. */
 export const RateLimit = (bucket: RateLimitBucket) => SetMetadata(RATE_LIMIT, bucket);
 
+export const SKIP_GLOBAL_RATE_LIMIT = 'winou:skip-global-rate-limit';
+/** For machine endpoints authenticated by a shared secret (device ingest), which send many requests. */
+export const SkipGlobalRateLimit = () => SetMetadata(SKIP_GLOBAL_RATE_LIMIT, true);
+
 export const CurrentUser = createParamDecorator((_: unknown, ctx: ExecutionContext): AuthUser => {
   const req = ctx.switchToHttp().getRequest<AppRequest>();
   if (!req.ctx?.user) throw new Error('CurrentUser used on a public route');

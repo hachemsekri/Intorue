@@ -18,7 +18,7 @@ export function middleware(req: NextRequest) {
     return NextResponse.redirect(url);
   }
   if (hasSession && (pathname === '/login' || pathname === '/signup')) {
-    return NextResponse.redirect(new URL('/vehicles', req.url));
+    return NextResponse.redirect(new URL('/map', req.url));
   }
   return NextResponse.next();
 }

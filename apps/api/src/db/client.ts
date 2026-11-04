@@ -27,15 +27,17 @@ export async function createDatabase(url: string): Promise<Database> {
 
   if (url.startsWith('pglite:')) {
     const { PGlite } = await import('@electric-sql/pglite');
+    const { postgis } = await import('@electric-sql/pglite-postgis');
     const { drizzle } = await import('drizzle-orm/pglite');
     const target = url.slice('pglite:'.length);
     let client: InstanceType<typeof PGlite>;
+    const extensions = { postgis };
     if (target === 'memory' || target === '') {
-      client = new PGlite();
+      client = await PGlite.create({ extensions });
     } else {
       const dir = resolve(target);
       mkdirSync(dir, { recursive: true });
-      client = new PGlite(dir);
+      client = await PGlite.create(dir, { extensions });
     }
     db = drizzle(client, { schema }) as unknown as Db;
     close = () => client.close();

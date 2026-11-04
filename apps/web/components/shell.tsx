@@ -17,7 +17,7 @@ interface NavItem {
 }
 
 const NAV: NavItem[] = [
-  { href: '/map', label: 'nav.map', soon: true },
+  { href: '/map', label: 'nav.map' },
   { href: '/trips', label: 'nav.trips', soon: true },
   { href: '/alerts', label: 'nav.alerts', soon: true },
   { href: '/vehicles', label: 'nav.vehicles' },

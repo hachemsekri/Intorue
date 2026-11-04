@@ -43,6 +43,9 @@ export async function makeApp(envOverrides: Record<string, string> = {}): Promis
     JWT_SECRET: 'test-secret-test-secret-test-secret-0123',
     RATE_LIMIT_AUTH_PER_MIN: '10000',
     RATE_LIMIT_GLOBAL_PER_MIN: '100000',
+    // Independent of the developer's local .env.
+    INGEST_SECRET: '',
+    SMTP_URL: '',
     ...envOverrides,
   });
   const mailer = new MemoryMailer();

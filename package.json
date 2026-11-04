@@ -16,7 +16,8 @@
     "db:seed": "corepack pnpm --filter @winou/api run db:seed",
     "db:seed:reset": "corepack pnpm --filter @winou/api run db:seed -- --reset",
     "infra:up": "docker compose -f infra/docker-compose.yml up -d",
-    "infra:down": "docker compose -f infra/docker-compose.yml down"
+    "infra:down": "docker compose -f infra/docker-compose.yml down",
+    "sim": "corepack pnpm --filter @winou/simulator run start"
   },
   "devDependencies": {
     "typescript": "~5.7.2"

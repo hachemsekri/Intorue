@@ -5,6 +5,7 @@ import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fa
 import cookie from '@fastify/cookie';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
+import websocket from '@fastify/websocket';
 import { sql } from 'drizzle-orm';
 import { loadEnv, ENV, type Env } from './config/env';
 import { createDatabase, type Database } from './db/client';
@@ -24,6 +25,13 @@ import { OrgsService } from './orgs/orgs.service';
 import { DevicesController, VehiclesController } from './vehicles/fleet.controller';
 import { VehiclesService } from './vehicles/vehicles.service';
 import { DevicesService } from './devices/devices.service';
+import { EVENT_BUS, InMemoryEventBus, type EventBus } from './live/event-bus';
+import { LiveController } from './live/live.controller';
+import { LiveService } from './live/live.service';
+import { LiveSocketHandler, LiveTickets } from './live/live.socket';
+import { IngestController } from './positions/ingest.controller';
+import { PositionsService } from './positions/positions.service';
+import { RetentionService } from './positions/retention.service';
 
 @Controller('health')
 class HealthController {
@@ -41,6 +49,7 @@ export interface AppDeps {
   db: Database;
   mailer: Mailer;
   clock: Clock;
+  bus: EventBus;
 }
 
 @Module({})
@@ -55,12 +64,20 @@ class AppModule {
         InvitationsController,
         VehiclesController,
         DevicesController,
+        LiveController,
+        IngestController,
       ],
       providers: [
         { provide: ENV, useValue: deps.env },
         { provide: DB, useValue: deps.db },
         { provide: MAILER, useValue: deps.mailer },
         { provide: CLOCK, useValue: deps.clock },
+        { provide: EVENT_BUS, useValue: deps.bus },
+        LiveService,
+        LiveTickets,
+        LiveSocketHandler,
+        PositionsService,
+        RetentionService,
         RateLimiter,
         TokensService,
         AuditService,
@@ -85,7 +102,7 @@ export async function createApp(
   const db = partial.db ?? (await createDatabase(env.DATABASE_URL));
   await migrate(db);
   const mailer = partial.mailer ?? (env.SMTP_URL ? new SmtpMailer(env.SMTP_URL, env.MAIL_FROM) : new ConsoleMailer());
-  const deps: AppDeps = { env, db, mailer, clock: partial.clock ?? systemClock };
+  const deps: AppDeps = { env, db, mailer, clock: partial.clock ?? systemClock, bus: partial.bus ?? new InMemoryEventBus() };
 
   const adapter = new FastifyAdapter({ trustProxy: env.TRUST_PROXY, bodyLimit: 256 * 1024 });
   const app = await NestFactory.create<NestFastifyApplication>(AppModule.register(deps), adapter, {
@@ -96,6 +113,12 @@ export async function createApp(
   await app.register(helmet, { contentSecurityPolicy: false });
   const origins = env.CORS_ORIGINS.split(',').map((s) => s.trim()).filter(Boolean);
   await app.register(cors, { origin: origins.length ? origins : false, credentials: true });
+  await app.register(websocket, { options: { maxPayload: 4096 } });
+  const live = app.get(LiveSocketHandler);
+  const fastify = app.getHttpAdapter().getInstance();
+  fastify.register(async (f) => {
+    f.get('/api/live/ws', { websocket: true }, (socket, req) => live.handle(socket, req));
+  });
   app.enableShutdownHooks();
   await app.init();
   await app.getHttpAdapter().getInstance().ready();

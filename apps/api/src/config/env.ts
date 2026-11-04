@@ -25,6 +25,8 @@ const EnvSchema = z.object({
   TRUST_PROXY: bool.default('false'),
   RATE_LIMIT_AUTH_PER_MIN: z.coerce.number().int().positive().default(10),
   RATE_LIMIT_GLOBAL_PER_MIN: z.coerce.number().int().positive().default(300),
+  /** Shared secret for POST /api/ingest/traccar (Traccar forwarding and the simulator). Unset = ingest disabled. */
+  INGEST_SECRET: z.preprocess((v) => (v === '' ? undefined : v), z.string().min(24, 'INGEST_SECRET must be at least 24 characters').optional()),
   LOGIN_MAX_FAILURES: z.coerce.number().int().positive().default(5),
 });
 

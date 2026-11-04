@@ -20,6 +20,7 @@ interface I18nValue {
   tx: (key: string, fallback?: string) => string;
   formatDateTime: (iso: string | Date) => string;
   formatDate: (iso: string | Date) => string;
+  formatTime: (iso: string | Date) => string;
   formatRelative: (iso: string | Date) => string;
   setLocale: (l: SupportedLocale) => void;
 }
@@ -58,6 +59,7 @@ export function I18nProvider({ locale, children }: { locale: SupportedLocale; ch
     const intlLocale = locale === 'ar' ? 'ar-TN-u-nu-latn' : locale === 'en' ? 'en-GB' : 'fr-TN';
     const dt = new Intl.DateTimeFormat(intlLocale, { timeZone: TIMEZONE, dateStyle: 'medium', timeStyle: 'short', hourCycle: 'h23' });
     const d = new Intl.DateTimeFormat(intlLocale, { timeZone: TIMEZONE, dateStyle: 'medium' });
+    const tm = new Intl.DateTimeFormat(intlLocale, { timeZone: TIMEZONE, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
     const rel = new Intl.RelativeTimeFormat(intlLocale, { numeric: 'auto' });
     return {
       locale,
@@ -66,6 +68,7 @@ export function I18nProvider({ locale, children }: { locale: SupportedLocale; ch
       tx: (key, fallback) => lookup(locale, key) ?? lookup('fr', key) ?? fallback ?? key,
       formatDateTime: (v) => dt.format(new Date(v)),
       formatDate: (v) => d.format(new Date(v)),
+      formatTime: (v) => tm.format(new Date(v)),
       formatRelative: (v) => {
         const s = Math.round((new Date(v).getTime() - Date.now()) / 1000);
         const abs = Math.abs(s);

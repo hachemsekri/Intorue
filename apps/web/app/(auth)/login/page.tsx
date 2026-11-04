@@ -22,7 +22,7 @@ function LoginForm() {
     try {
       await api('/auth/login', { method: 'POST', body: { email: f.get('email'), password: f.get('password') } });
       const next = params.get('next');
-      window.location.href = next && next.startsWith('/') && !next.startsWith('//') ? next : '/vehicles';
+      window.location.href = next && next.startsWith('/') && !next.startsWith('//') ? next : '/map';
     } catch (err) {
       setError(errorText(err).message);
       setBusy(false);
