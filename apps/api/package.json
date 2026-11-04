@@ -9,11 +9,14 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "db:migrate": "tsx src/scripts/migrate.ts",
-    "db:seed": "tsx src/scripts/seed.ts"
+    "db:seed": "tsx src/scripts/seed.ts",
+    "db:server": "tsx src/scripts/dev-db.ts",
+    "db:check": "tsx src/scripts/db-check.ts"
   },
   "dependencies": {
     "@electric-sql/pglite": "0.5.15",
     "@electric-sql/pglite-postgis": "0.2.15",
+    "@electric-sql/pglite-socket": "0.2.18",
     "@fastify/cookie": "^11.0.2",
     "@fastify/cors": "^10.0.2",
     "@fastify/helmet": "^13.0.1",

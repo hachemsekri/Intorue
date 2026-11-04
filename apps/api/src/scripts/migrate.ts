@@ -4,7 +4,7 @@ import { migrate } from '../db/migrate';
 
 async function main() {
   const env = loadEnv();
-  const db = await createDatabase(env.DATABASE_URL);
+  const db = await createDatabase(env.DATABASE_URL, { poolMax: env.DATABASE_POOL_MAX });
   const applied = await migrate(db, (m) => console.log(m));
   console.log(applied.length ? `Done (${applied.length} applied).` : 'Database already up to date.');
   await db.close();

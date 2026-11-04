@@ -14,6 +14,8 @@ const EnvSchema = z.object({
    * embedded engine used by tests and by local runs without Docker.
    */
   DATABASE_URL: z.string().min(1).default('pglite:./.data/pglite'),
+  /** Pool size. Use 1 with the local PGlite server (it runs one query at a time). */
+  DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(100).default(10),
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
   ACCESS_TOKEN_TTL_SECONDS: z.coerce.number().int().default(15 * 60),
   REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().default(30),

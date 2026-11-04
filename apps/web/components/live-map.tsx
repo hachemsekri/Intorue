@@ -8,7 +8,8 @@ import { useEffect, useRef, useState } from 'react';
 import type { LiveVehicle } from '@/lib/live';
 import { useI18n } from '@/lib/i18n';
 
-const STYLE_SETTING = process.env.NEXT_PUBLIC_MAP_STYLE ?? 'none';
+/** "auto" = self-hosted Tunisia basemap if installed (scripts/fetch-basemap.mjs), else a plain background. */
+const STYLE_SETTING = process.env.NEXT_PUBLIC_MAP_STYLE ?? 'auto';
 const TUNIS: [number, number] = [10.1815, 36.8065];
 
 export const STATUS_COLOR: Record<LiveStatus, string> = {
@@ -30,14 +31,57 @@ const LANDMARKS: { name: string; lngLat: [number, number] }[] = [
   { name: 'Bardo', lngLat: [10.1342, 36.8091] },
 ];
 
-function buildStyle(): { style: StyleSpecification | string; attribution: string; hasBasemap: boolean } {
-  if (STYLE_SETTING === 'none') {
-    return {
-      hasBasemap: false,
-      attribution: 'Winou · fond de carte non configuré',
-      style: { version: 8, sources: {}, layers: [{ id: 'bg', type: 'background', paint: { 'background-color': '#EDF1F5' } }] },
-    };
-  }
+interface ResolvedStyle {
+  style: StyleSpecification | string;
+  attribution: string;
+  hasBasemap: boolean;
+}
+
+const PLAIN: ResolvedStyle = {
+  hasBasemap: false,
+  attribution: 'Winou · fond de carte non configuré',
+  style: { version: 8, sources: {}, layers: [{ id: 'bg', type: 'background', paint: { 'background-color': '#EDF1F5' } }] },
+};
+
+/** Self-hosted Protomaps basemap (OSM data), recoloured to match the product palette. */
+async function protomapsLocal(locale: string): Promise<ResolvedStyle | null> {
+  const meta = await fetch('/map/basemap.json').then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  if (!meta) return null;
+  const { layers, namedFlavor } = await import('@protomaps/basemaps');
+  const origin = window.location.origin;
+  const flavor = {
+    ...namedFlavor('light'),
+    background: '#EEF2F6',
+    earth: '#EEF2F6',
+    water: '#BFE3E7',
+    park_a: '#DCEBDD',
+    park_b: '#D3E6D4',
+  };
+  const attribution = '<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap</a> · <a href="https://protomaps.com" target="_blank" rel="noopener">Protomaps</a>';
+  return {
+    hasBasemap: true,
+    attribution: '',
+    style: {
+      version: 8,
+      glyphs: `${origin}/map/fonts/{fontstack}/{range}.pbf`,
+      sprite: `${origin}/map/sprites/light`,
+      sources: {
+        protomaps: {
+          type: 'vector',
+          tiles: [`${origin}/map/tiles/{z}/{x}/{y}.mvt`],
+          minzoom: 0,
+          maxzoom: Number(meta.maxZoom ?? 15),
+          attribution,
+        },
+      },
+      layers: layers('protomaps', flavor, { lang: locale === 'ar' ? 'ar' : locale === 'en' ? 'en' : 'fr' }),
+    },
+  };
+}
+
+async function resolveStyle(locale: string): Promise<ResolvedStyle> {
+  if (STYLE_SETTING === 'none') return PLAIN;
+  if (STYLE_SETTING === 'auto' || STYLE_SETTING === 'protomaps-local') return (await protomapsLocal(locale)) ?? PLAIN;
   const p = mapProvider('custom', { styleUrl: STYLE_SETTING });
   return { hasBasemap: true, attribution: p.attribution, style: p.styleUrl };
 }
@@ -53,22 +97,26 @@ export function LiveMap({
   onSelect: (id: string) => void;
   label: (v: LiveVehicle) => string;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<MlMap | null>(null);
   const markers = useRef(new Map<string, Marker>());
   const fitted = useRef(false);
   const [ready, setReady] = useState(false);
-  const [{ hasBasemap }] = useState(buildStyle);
+  const [hasBasemap, setHasBasemap] = useState(true);
   const ml = useRef<typeof import('maplibre-gl') | null>(null);
 
   // Create the map once.
   useEffect(() => {
     let cancelled = false;
-    void import('maplibre-gl').then((mod) => {
+    void Promise.all([import('maplibre-gl'), resolveStyle(locale)]).then(([mod, cfg]) => {
       if (cancelled || !container.current) return;
       ml.current = mod;
-      const cfg = buildStyle();
+      setHasBasemap(cfg.hasBasemap);
+      // Correct shaping and direction of Arabic labels (self-hosted copy of the official plugin).
+      if (mod.getRTLTextPluginStatus() === 'unavailable') {
+        void mod.setRTLTextPlugin('/vendor/mapbox-gl-rtl-text.js', true).catch(() => {});
+      }
       const m = new mod.Map({
         container: container.current,
         style: cfg.style,
@@ -77,8 +125,13 @@ export function LiveMap({
         attributionControl: false,
         cooperativeGestures: false,
       });
-      m.addControl(new mod.AttributionControl({ compact: false, customAttribution: cfg.attribution }), 'bottom-left');
-      m.addControl(new mod.NavigationControl({ showCompass: false }), 'top-right');
+      m.addControl(new mod.AttributionControl({ compact: false, ...(cfg.attribution ? { customAttribution: cfg.attribution } : {}) }), 'bottom-left');
+      // Outside the downloaded area, deep-zoom tiles do not exist: ignore those 404s.
+      m.on('error', (e) => {
+        const msg = String((e as { error?: Error }).error?.message ?? '');
+        if (!msg.includes('/map/tiles/')) console.error('[map]', msg || e);
+      });
+      m.addControl(new mod.NavigationControl({ showCompass: false }), 'bottom-right');
       if (!cfg.hasBasemap) {
         for (const l of LANDMARKS) {
           const el = document.createElement('div');
@@ -88,6 +141,7 @@ export function LiveMap({
         }
       }
       m.on('load', () => setReady(true));
+      if (process.env.NODE_ENV !== 'production') (window as unknown as { __winouMap?: MlMap }).__winouMap = m; // dev debugging
       map.current = m;
     });
     return () => {
@@ -96,6 +150,7 @@ export function LiveMap({
       map.current = null;
       markers.current.clear();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Sync vehicle markers.
@@ -169,7 +224,7 @@ export function LiveMap({
     <div className="relative h-full w-full">
       <div ref={container} className="h-full w-full" role="region" aria-label={t('nav.map')} />
       {!hasBasemap && (
-        <p className="pointer-events-none absolute end-3 bottom-8 max-w-xs rounded-lg bg-white/90 px-3 py-2 text-xs text-muted shadow-sm">
+        <p className="pointer-events-none absolute end-14 bottom-8 max-w-xs rounded-lg bg-white/90 px-3 py-2 text-xs text-muted shadow-sm">
           {t('map.basemapMissing')}
         </p>
       )}

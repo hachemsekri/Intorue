@@ -38,19 +38,13 @@ corepack pnpm install
 cp .env.example .env
 ```
 
-Then set `JWT_SECRET` in `.env` to a long random value:
+Then set `JWT_SECRET` and `INGEST_SECRET` in `.env` to long random values (run this twice):
 
 ```bash
 node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
 ```
 
-```bash
-corepack pnpm build:packages
-```
-
-```bash
-corepack pnpm db:seed
-```
+Start everything (local database, API, web app). Leave this terminal open:
 
 ```bash
 corepack pnpm dev
@@ -59,20 +53,36 @@ corepack pnpm dev
 - Web app: http://localhost:3000
 - API: http://localhost:4000/api/health
 
-Then, in a second terminal, start the simulated vehicles and open **Carte en direct**:
+In a **second terminal**, add the demo data (once), then start the simulated vehicles:
+
+```bash
+corepack pnpm db:seed
+```
 
 ```bash
 corepack pnpm sim
 ```
 
-The simulator needs `INGEST_SECRET` in `.env` (same value for the API and the simulator).
-Options: `--interval 5` (seconds between fixes), `--only 3,5` (some vehicles), `--once`.
+Simulator options: `--interval 5` (seconds between fixes), `--only 3,5` (some vehicles), `--once`.
+
+**Map with streets** (one-off, about 10 minutes, 70 MB): downloads the Tunisia basemap to `apps/web/public/map/`.
+Without it, the map shows vehicles on a plain background.
+
+```bash
+corepack pnpm basemap
+```
 
 ### Without Docker (default in `.env.example`)
 
-`DATABASE_URL=pglite:./.data/pglite` uses **PGlite**, real PostgreSQL compiled to run inside Node.
-It is for local development and tests only. The API refuses to start with it when `NODE_ENV=production`.
-PGlite allows only one process at a time, so **stop the API before running `db:seed`**.
+`corepack pnpm dev` first starts a local database server: **PGlite**, real PostgreSQL with PostGIS compiled to
+WebAssembly, listening on `127.0.0.1:5433` and storing its data in `apps/api/.data/pglite`. It runs as its own
+process so API restarts never touch the data folder, and it closes cleanly on Ctrl+C.
+It is for local development only (one query at a time, so `DATABASE_POOL_MAX=1`).
+The API refuses the in-process `pglite:` mode in production; the local server on port 5433 is for development only.
+
+`corepack pnpm db:check` prints row counts, to check the local database opens correctly. If the data folder is ever
+damaged (for example after the PC loses power), stop `dev`, delete `apps/api/.data/pglite`, start `dev` again and
+re-run `db:seed`. The folder only holds local development data.
 
 Password-reset and invitation emails are printed in the API console when `SMTP_URL` is empty.
 
@@ -121,9 +131,11 @@ Tests run against PGlite by default. To run them against the Docker PostgreSQL, 
 
 | Command | |
 |---|---|
-| `corepack pnpm dev` | Shared packages (watch), API and web together |
+| `corepack pnpm dev` | Local database, shared packages (watch), API and web together |
 | `corepack pnpm dev:api` | API only |
 | `corepack pnpm sim` | Simulated vehicles ([DÉMO]) |
+| `corepack pnpm db:check` | Check the local database opens, print row counts |
+| `corepack pnpm basemap` | Download or extend the self-hosted Tunisia basemap |
 | `corepack pnpm typecheck` | TypeScript across the repo |
 | `corepack pnpm db:migrate` | Apply SQL migrations (`apps/api/src/migrations`) |
 | `corepack pnpm infra:up` / `infra:down` | Start / stop Docker services |

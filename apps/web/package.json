@@ -10,6 +10,7 @@
     "test": "echo \"web: no unit tests yet (UI smoke-tested in browser)\""
   },
   "dependencies": {
+    "@protomaps/basemaps": "5.7.2",
     "@winou/config": "workspace:*",
     "@winou/i18n": "workspace:*",
     "@winou/shared": "workspace:*",

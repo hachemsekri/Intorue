@@ -38,7 +38,7 @@ async function main() {
   const env = loadEnv();
   if (env.NODE_ENV === 'production') throw new Error('Refusing to seed demo data in production.');
   const reset = process.argv.includes('--reset');
-  const db = await createDatabase(env.DATABASE_URL);
+  const db = await createDatabase(env.DATABASE_URL, { poolMax: env.DATABASE_POOL_MAX });
   await migrate(db);
   const s = db.system;
 

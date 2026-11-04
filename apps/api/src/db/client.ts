@@ -20,7 +20,7 @@ export interface Database {
   close(): Promise<void>;
 }
 
-export async function createDatabase(url: string): Promise<Database> {
+export async function createDatabase(url: string, opts: { poolMax?: number } = {}): Promise<Database> {
   let db: Db;
   let close: () => Promise<void>;
   let execScript: (script: string) => Promise<void>;
@@ -54,7 +54,9 @@ ${script}
   } else {
     const { Pool } = await import('pg');
     const { drizzle } = await import('drizzle-orm/node-postgres');
-    const pool = new Pool({ connectionString: url, max: 10 });
+    const max = opts.poolMax ?? 10;
+    // With a single connection, release it quickly when idle so scripts (seed) can connect too.
+    const pool = new Pool({ connectionString: url, max, idleTimeoutMillis: max === 1 ? 1000 : 10_000 });
     db = drizzle(pool, { schema }) as unknown as Db;
     close = () => pool.end();
     execScript = async (script) => {

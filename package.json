@@ -8,7 +8,7 @@
   "scripts": {
     "build": "corepack pnpm -r run build",
     "build:packages": "corepack pnpm -r --filter \"./packages/*\" run build",
-    "dev": "corepack pnpm build:packages && corepack pnpm -r --parallel run dev",
+    "dev": "corepack pnpm build:packages && node scripts/dev.mjs",
     "dev:api": "corepack pnpm build:packages && corepack pnpm --filter @winou/api run dev",
     "test": "corepack pnpm build:packages && corepack pnpm -r run test",
     "typecheck": "corepack pnpm build:packages && corepack pnpm -r run typecheck",
@@ -17,9 +17,13 @@
     "db:seed:reset": "corepack pnpm --filter @winou/api run db:seed -- --reset",
     "infra:up": "docker compose -f infra/docker-compose.yml up -d",
     "infra:down": "docker compose -f infra/docker-compose.yml down",
-    "sim": "corepack pnpm --filter @winou/simulator run start"
+    "sim": "corepack pnpm --filter @winou/simulator run start",
+    "db:server": "corepack pnpm --filter @winou/api run db:server",
+    "db:check": "corepack pnpm --filter @winou/api run db:check",
+    "basemap": "node scripts/fetch-basemap.mjs"
   },
   "devDependencies": {
+    "pmtiles": "4.5.0",
     "typescript": "~5.7.2"
   }
 }

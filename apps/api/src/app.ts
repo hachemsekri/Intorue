@@ -99,7 +99,8 @@ export async function createApp(
   partial: Partial<AppDeps> & { envOverrides?: Record<string, string> } = {},
 ): Promise<{ app: NestFastifyApplication; deps: AppDeps }> {
   const env = partial.env ?? loadEnv(partial.envOverrides);
-  const db = partial.db ?? (await createDatabase(env.DATABASE_URL));
+  const ownDb = !partial.db;
+  const db = partial.db ?? (await createDatabase(env.DATABASE_URL, { poolMax: env.DATABASE_POOL_MAX }));
   await migrate(db);
   const mailer = partial.mailer ?? (env.SMTP_URL ? new SmtpMailer(env.SMTP_URL, env.MAIL_FROM) : new ConsoleMailer());
   const deps: AppDeps = { env, db, mailer, clock: partial.clock ?? systemClock, bus: partial.bus ?? new InMemoryEventBus() };
@@ -120,6 +121,13 @@ export async function createApp(
     f.get('/api/live/ws', { websocket: true }, (socket, req) => live.handle(socket, req));
   });
   app.enableShutdownHooks();
+  if (ownDb) {
+    // Close the database cleanly when the API stops (Ctrl+C, watch restart).
+    const fastifyInstance = app.getHttpAdapter().getInstance();
+    fastifyInstance.addHook('onClose', async () => {
+      await db.close().catch(() => {});
+    });
+  }
   await app.init();
   await app.getHttpAdapter().getInstance().ready();
   return { app, deps };
