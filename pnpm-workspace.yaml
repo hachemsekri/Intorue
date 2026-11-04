@@ -1,0 +1,10 @@
+packages:
+  - apps/*
+  - packages/*
+allowBuilds:
+  "@swc/core": true
+  esbuild: true
+  "@nestjs/core": false
+  sharp: true
+  unrs-resolver: true
+  "@tailwindcss/oxide": true

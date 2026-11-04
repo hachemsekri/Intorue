@@ -1,0 +1,46 @@
+{
+  "name": "@winou/api",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "nest build",
+    "dev": "nest start --watch",
+    "start": "node dist/src/main.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "db:migrate": "tsx src/scripts/migrate.ts",
+    "db:seed": "tsx src/scripts/seed.ts"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "^0.2.17",
+    "@fastify/cookie": "^11.0.2",
+    "@fastify/cors": "^10.0.2",
+    "@fastify/helmet": "^13.0.1",
+    "@nestjs/common": "^11.0.7",
+    "@nestjs/core": "^11.0.7",
+    "@nestjs/platform-fastify": "^11.0.7",
+    "@node-rs/argon2": "^2.0.2",
+    "@winou/config": "workspace:*",
+    "@winou/shared": "workspace:*",
+    "drizzle-orm": "^0.38.4",
+    "fastify": "5.11.3",
+    "jose": "^5.9.6",
+    "nodemailer": "^6.10.0",
+    "pg": "^8.13.1",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^11.0.2",
+    "@swc/cli": "^0.6.0",
+    "@swc/core": "^1.10.12",
+    "@types/node": "^22.10.10",
+    "@types/nodemailer": "^6.4.17",
+    "@types/pg": "^8.11.11",
+    "tsx": "^4.19.2",
+    "typescript": "~5.7.2",
+    "unplugin-swc": "^1.5.1",
+    "vitest": "^3.0.5"
+  }
+}

@@ -1,0 +1,40 @@
+# Local development infrastructure. Never use these credentials in production.
+name: winou
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_USER: winou
+      POSTGRES_PASSWORD: winou_dev_only
+      POSTGRES_DB: winou
+    ports: ["5432:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U winou"]
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+
+  mailpit:
+    image: axllent/mailpit:v1.21
+    ports:
+      - "1025:1025"   # SMTP
+      - "8025:8025"   # Web UI: http://localhost:8025
+
+  # Device gateway. Only decodes device data; forwarding to the API is configured in Milestone 2.
+  # Command ports are intentionally not used: this platform never sends commands to devices.
+  traccar:
+    image: traccar/traccar:6.5
+    ports:
+      - "8082:8082"   # Traccar admin UI (dev only)
+      - "5055:5055"   # OsmAnd protocol (simulator)
+    volumes:
+      - ./traccar/traccar.xml:/opt/traccar/conf/traccar.xml:ro
+      - traccardata:/opt/traccar/data
+
+volumes:
+  pgdata:
+  traccardata:

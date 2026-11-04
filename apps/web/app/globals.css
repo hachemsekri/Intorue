@@ -1,0 +1,60 @@
+@import 'tailwindcss';
+
+/* Design tokens, from packages/config brand colours and the reference designs. */
+@theme {
+  --color-navy: #0e2a47;
+  --color-navy-deep: #0b2440;
+  --color-navy-soft: #1b3a5c;
+  --color-teal: #14b8a6;
+  --color-teal-dark: #0e7c7b;
+  --color-canvas: #f3f6f9;
+  --color-line: #dde3ea;
+  --color-ink: #0e2a47;
+  --color-muted: #5b6b7f;
+  --color-moving: #0e8a87;
+  --color-stopped: #3f6ea8;
+  --color-offline: #6b7785;
+  --color-attention: #b34a07;
+  --color-attention-bg: #fdefe3;
+  --color-danger: #b42318;
+  --color-danger-bg: #fdecea;
+  --color-ok-bg: #e3f5f3;
+  --color-info-bg: #e8eef7;
+
+  --font-sans: var(--font-latin), var(--font-arabic), ui-sans-serif, system-ui, sans-serif;
+  --radius-card: 14px;
+}
+
+@layer base {
+  html {
+    color: var(--color-ink);
+    background: var(--color-canvas);
+  }
+  body {
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  /* Visible keyboard focus everywhere. */
+  :focus-visible {
+    outline: 3px solid var(--color-teal);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+  dialog::backdrop {
+    background: rgb(11 36 64 / 0.45);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* Latin digits and plates stay left-to-right inside Arabic text. */
+.ltr-isolate {
+  direction: ltr;
+  unicode-bidi: isolate;
+}

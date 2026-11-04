@@ -1,0 +1,24 @@
+{
+  "name": "winou",
+  "private": true,
+  "packageManager": "pnpm@12.16.1",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "corepack pnpm -r run build",
+    "build:packages": "corepack pnpm -r --filter \"./packages/*\" run build",
+    "dev": "corepack pnpm build:packages && corepack pnpm -r --parallel run dev",
+    "dev:api": "corepack pnpm build:packages && corepack pnpm --filter @winou/api run dev",
+    "test": "corepack pnpm build:packages && corepack pnpm -r run test",
+    "typecheck": "corepack pnpm build:packages && corepack pnpm -r run typecheck",
+    "db:migrate": "corepack pnpm --filter @winou/api run db:migrate",
+    "db:seed": "corepack pnpm --filter @winou/api run db:seed",
+    "db:seed:reset": "corepack pnpm --filter @winou/api run db:seed -- --reset",
+    "infra:up": "docker compose -f infra/docker-compose.yml up -d",
+    "infra:down": "docker compose -f infra/docker-compose.yml down"
+  },
+  "devDependencies": {
+    "typescript": "~5.7.2"
+  }
+}
