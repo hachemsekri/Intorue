@@ -66,7 +66,7 @@ function InvitationForm() {
 
   return (
     <>
-      <h1 className="text-3xl font-extrabold tracking-tight">{t('auth.invitationTitle')}</h1>
+      <h1 className="h-display text-[clamp(36px,5vw,48px)]">{t('auth.invitationTitle')}</h1>
       <p className="mt-2 mb-8 text-muted">{t('auth.invitationBody')}</p>
       {error && (
         <div className="mb-5">
@@ -89,7 +89,7 @@ function InvitationForm() {
             {(p) => <Input {...p} name="password" type="password" autoComplete="new-password" required />}
           </Field>
           <label className="flex items-start gap-3 text-sm">
-            <input type="checkbox" name="acceptTerms" className="mt-0.5 size-5 accent-navy" required />
+            <input type="checkbox" name="acceptTerms" className="mt-0.5 size-5 accent-[var(--acc)]" required />
             <span>
               {t('auth.acceptTerms')}
               <span className="mt-1 block text-xs text-muted">{t('auth.termsPlaceholder')}</span>
@@ -102,7 +102,7 @@ function InvitationForm() {
             {t('auth.haveAccount')}{' '}
             <Link
               href={`/login?next=${encodeURIComponent(`/invitation?token=${token}`)}`}
-              className="font-semibold text-navy underline-offset-4 hover:underline"
+              className="font-semibold text-ink underline-offset-4 hover:underline"
             >
               {t('auth.signIn')}
             </Link>

@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { C } from '@/components/ui';
+import {statusColor, useStyles, useTheme} from '@/components/ui';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { registerForPush } from '@/lib/push';
@@ -8,6 +8,8 @@ import { useSession } from '@/lib/session';
 
 /** Bottom tabs as in the mobile design: Carte · Flotte · Alertes · Compte (text labels, no icon font). */
 export default function TabsLayout() {
+  const { T } = useTheme();
+  const s = useStyles();
   const { t, locale } = useI18n();
   const { org } = useSession();
   const [open, setOpen] = useState(0);
@@ -31,11 +33,11 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: C.navy,
-        tabBarInactiveTintColor: C.textMuted,
+        tabBarActiveTintColor: T.ink,
+        tabBarInactiveTintColor: T.sub,
         tabBarLabelStyle: { fontSize: 15, fontWeight: '600' },
         tabBarIconStyle: { display: 'none' },
-        tabBarStyle: { height: 64, borderTopColor: C.border },
+        tabBarStyle: { height: 64, borderTopColor: T.line, backgroundColor: T.surf },
         tabBarItemStyle: { justifyContent: 'center' },
       }}
     >
@@ -43,7 +45,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="fleet" options={{ title: t('mobile.tabs.fleet') }} />
       <Tabs.Screen
         name="alerts"
-        options={{ title: t('mobile.tabs.alerts'), tabBarBadge: open > 0 ? (open > 99 ? '99+' : open) : undefined, tabBarBadgeStyle: { backgroundColor: '#F28C28', color: C.navyDeep } }}
+        options={{ title: t('mobile.tabs.alerts'), tabBarBadge: open > 0 ? (open > 99 ? '99+' : open) : undefined, tabBarBadgeStyle: { backgroundColor: T.acc, color: T.onacc } }}
       />
       <Tabs.Screen name="account" options={{ title: t('mobile.tabs.account') }} />
     </Tabs>

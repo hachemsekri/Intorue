@@ -14,7 +14,7 @@
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { SimVehicle, type SimFix } from './engine';
-import { SCENARIOS } from './scenarios';
+import { SCENARIOS } from './road-scenarios';
 
 const KMH_TO_KNOTS = 1 / 1.852;
 

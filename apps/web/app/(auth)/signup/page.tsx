@@ -44,7 +44,7 @@ export default function SignupPage() {
 
   return (
     <>
-      <h1 className="mb-8 text-3xl font-extrabold tracking-tight">{t('auth.signUpTitle')}</h1>
+      <h1 className="h-display mb-7 text-[clamp(36px,5vw,48px)]">{t('auth.signUpTitle')}</h1>
       <form onSubmit={onSubmit} className="flex flex-col gap-5" noValidate>
         {error && <Notice tone="error">{error}</Notice>}
         <fieldset>
@@ -54,8 +54,8 @@ export default function SignupPage() {
               <label
                 key={k}
                 className={cx(
-                  'cursor-pointer rounded-xl border-2 bg-white p-4 transition-colors has-[:focus-visible]:outline has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-teal',
-                  kind === k ? 'border-navy' : 'border-line hover:border-muted/40',
+                  'cursor-pointer rounded-xl border-2 bg-surface p-4 transition-colors has-[:focus-visible]:outline has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-[var(--acc)]',
+                  kind === k ? 'border-ink' : 'border-line hover:border-muted/40',
                 )}
               >
                 <input type="radio" name="kind" value={k} checked={kind === k} onChange={() => setKind(k)} className="sr-only" />
@@ -81,7 +81,7 @@ export default function SignupPage() {
         </Field>
         <div>
           <label className="flex items-start gap-3 text-sm">
-            <input type="checkbox" name="acceptTerms" className="mt-0.5 size-5 accent-navy" required />
+            <input type="checkbox" name="acceptTerms" className="mt-0.5 size-5 accent-[var(--acc)]" required />
             <span>
               {t('auth.acceptTerms')}
               <span className="mt-1 block text-xs text-muted">{t('auth.termsPlaceholder')}</span>
@@ -95,7 +95,7 @@ export default function SignupPage() {
       </form>
       <p className="mt-8 text-center text-muted">
         {t('auth.haveAccount')}{' '}
-        <Link href="/login" className="font-semibold text-navy underline-offset-4 hover:underline">
+        <Link href="/login" className="font-semibold text-ink underline-offset-4 hover:underline">
           {t('auth.signIn')}
         </Link>
       </p>

@@ -14,8 +14,9 @@ import {
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useEffect, useState, type FormEvent } from 'react';
+import { Suspense, useCallback, useEffect, useState, type FormEvent } from 'react';
 import { useAlertText } from '@/components/alert-text';
+import { LoadError } from '@/components/load-error';
 import { Badge, Button, Card, Chip, Dialog, EmptyState, Field, Input, Notice, PageHeader, Select, cx, useErrorText } from '@/components/ui';
 import type { Draft } from '@/components/zone-editor';
 import { api } from '@/lib/api';
@@ -23,8 +24,6 @@ import { useI18n } from '@/lib/i18n';
 import { useApiData, useSession } from '@/lib/session';
 
 const ZoneEditor = dynamic(() => import('@/components/zone-editor').then((m) => m.ZoneEditor), { ssr: false });
-
-type Tab = 'open' | 'handled' | 'settings';
 
 export default function AlertsPage() {
   return (
@@ -34,111 +33,259 @@ export default function AlertsPage() {
   );
 }
 
+/** Tell the menu's alert count to refresh. */
+const alertsChanged = () => window.dispatchEvent(new Event('intorue:alerts-changed'));
+
 function AlertsView() {
   const { t } = useI18n();
-  const { org } = useSession();
   const router = useRouter();
   const params = useSearchParams();
-  const tab = (params.get('tab') as Tab) ?? 'open';
-  const count = useApiData<{ open: number; urgent: number }>(`/orgs/${org.orgId}/alerts/count`);
-  const setTab = (next: Tab) => router.replace(next === 'open' ? '/alerts' : `/alerts?tab=${next}`);
+  const managing = params.get('tab') === 'settings';
+
+  if (managing)
+    return (
+      <div className="fade-in">
+        <PageHeader
+          title={t('alerts.settings')}
+          actions={
+            <Button variant="secondary" onClick={() => router.push('/alerts')}>
+              {t('alerts.backToInbox')}
+            </Button>
+          }
+        />
+        <Settings />
+      </div>
+    );
 
   return (
-    <>
-      <PageHeader title={t('alerts.title')} subtitle={count.data ? t('alerts.subtitle', { count: count.data.open }) : undefined} />
-      <div className="mb-5 flex flex-wrap gap-2" role="tablist" aria-label={t('alerts.title')}>
-        {(['open', 'handled', 'settings'] as const).map((k) => (
-          <Chip key={k} active={tab === k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)}>
-            {t(k === 'open' ? 'alerts.toHandle' : k === 'handled' ? 'alerts.handled' : 'alerts.settings')}
-          </Chip>
-        ))}
+    <div className="fade-in">
+      <PageHeader title={t('alerts.title')} />
+      <div className="flex flex-wrap items-start gap-3.5">
+        <Inbox />
+        <RulesAside />
       </div>
-      {tab === 'settings' ? <Settings /> : <Inbox status={tab} onChange={() => void count.reload()} />}
-    </>
+    </div>
   );
 }
 
-// ---------------- Inbox ----------------
+// ---------------- Inbox: to handle, then recently handled ----------------
 
-function Inbox({ status, onChange }: { status: 'open' | 'handled'; onChange: () => void }) {
+function Inbox() {
   const { t, formatRelative, formatDateTime } = useI18n();
   const { org, can } = useSession();
   const errorText = useErrorText();
   const alertText = useAlertText();
-  const list = useApiData<AlertDto[]>(`/orgs/${org.orgId}/alerts?status=${status}&limit=100`);
+  const open = useApiData<AlertDto[]>(`/orgs/${org.orgId}/alerts?status=open&limit=100`);
+  const handled = useApiData<AlertDto[]>(`/orgs/${org.orgId}/alerts?status=handled&limit=20`);
+  // The list shows the latest 100; the headline gives the true total.
+  const count = useApiData<{ open: number }>(`/orgs/${org.orgId}/alerts/count`);
   const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  const reloadAll = useCallback(async () => {
+    await Promise.all([open.reload(), handled.reload(), count.reload()]);
+  }, [open.reload, handled.reload, count.reload]);
 
+  // New alerts every 20 s while the page is visible.
   useEffect(() => {
-    const id = setInterval(() => void list.reload(), 20_000);
-    return () => clearInterval(id);
-  }, [list.reload]);
+    const tick = () => document.visibilityState === 'visible' && void Promise.all([open.reload(), count.reload()]);
+    const id = setInterval(tick, 20_000);
+    document.addEventListener('visibilitychange', tick);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', tick);
+    };
+  }, [open.reload, count.reload]);
 
-  async function handle(a: AlertDto) {
+  async function act(a: AlertDto, action: 'handle' | 'reopen') {
+    setBusy(a.id);
+    setError(null);
     try {
-      await api(`/orgs/${org.orgId}/alerts/${a.id}/handle`, { method: 'POST', body: {} });
-      await list.reload();
-      onChange();
+      await api(`/orgs/${org.orgId}/alerts/${a.id}/${action}`, { method: 'POST', body: action === 'handle' ? {} : undefined });
+      await reloadAll();
+      alertsChanged();
     } catch (e) {
       setError(errorText(e).message);
+    } finally {
+      setBusy(null);
     }
   }
 
-  if (list.loading && !list.data) return <p role="status" className="text-muted">{t('common.loading')}</p>;
-  if (list.data && list.data.length === 0) return <EmptyState>{t(status === 'open' ? 'alerts.none' : 'alerts.noneHandled')}</EmptyState>;
+  if (open.error && !open.data) return <div className="min-w-0 flex-[999_1_500px]"><LoadError onRetry={() => void reloadAll()} /></div>;
+
+  const n = count.data?.open ?? open.data?.length ?? 0;
+  const mayHandle = can('alerts.handle');
 
   return (
-    <>
-      {error && (
-        <div className="mb-3">
-          <Notice tone="error">{error}</Notice>
-        </div>
-      )}
-      <ul className="flex flex-col gap-3" aria-label={t(status === 'open' ? 'alerts.toHandle' : 'alerts.handled')}>
-        {(list.data ?? []).map((a) => {
+    <section aria-labelledby="inbox-head" className="flex min-w-0 flex-[999_1_500px] flex-col gap-2.5">
+      <p id="inbox-head" className="h-display mt-1 mb-2 text-[clamp(34px,4.2vw,60px)]" aria-live="polite">
+        {!open.data ? t('common.loading') : n === 1 ? t('alerts.toHandleOne') : n ? t('alerts.toHandleMany', { count: n }) : t('alerts.allHandled')}
+      </p>
+      {error && <Notice tone="error">{error}</Notice>}
+
+      <ul className="flex flex-col gap-2.5" aria-label={t('alerts.toHandle')}>
+        {(open.data ?? []).map((a) => {
           const txt = alertText(a);
           return (
-            <li key={a.id} className="flex flex-col gap-3 rounded-[var(--radius-card)] bg-white px-5 py-4 lg:flex-row lg:items-center">
-              <span className="shrink-0">
-                <span
-                  className={cx(
-                    'inline-block rounded-full px-3 py-1 text-sm font-semibold',
-                    a.severity === 'urgent' ? 'bg-attention-bg text-attention' : 'bg-info-bg text-navy',
-                  )}
-                >
-                  {t(`alerts.severities.${a.severity}`)}
+            <li key={a.id} className="flex flex-wrap items-center gap-x-[18px] gap-y-2.5 rounded-[20px] bg-ink px-5 py-[18px] text-canvas">
+              <div className="min-w-0 flex-[1_1_280px]">
+                <strong className="h-display mb-0.5 block text-2xl">{txt.title}</strong>
+                <span className="text-[15px]">
+                  {a.severity === 'urgent' && <span className="me-2 rounded-full bg-acc px-2 py-0.5 text-[13px] font-extrabold text-on-acc">{t('alerts.severities.urgent')}</span>}
+                  {txt.desc}
                 </span>
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="text-[17px] font-bold">{txt.title}</p>
-                <p className="text-muted">{txt.desc}</p>
-                {a.status === 'handled' && a.handledAt && (
-                  <p className="mt-1 text-sm text-muted">
-                    {t('alerts.handledBy', { name: a.handledBy?.name ?? '—', time: formatDateTime(a.handledAt) })}
-                    {a.note ? ` · ${a.note}` : ''}
-                  </p>
-                )}
               </div>
-              <time dateTime={a.occurredAt} title={formatDateTime(a.occurredAt)} className="shrink-0 text-muted lg:text-end">
+              <time dateTime={a.occurredAt} title={formatDateTime(a.occurredAt)} className="text-sm font-semibold">
                 {formatRelative(a.occurredAt)}
               </time>
-              <div className="flex shrink-0 flex-wrap gap-2">
-                <Link
-                  href={`/map?vehicle=${a.vehicle.id}`}
-                  className="inline-flex min-h-11 items-center rounded-xl bg-navy px-4 text-[15px] font-semibold text-white hover:bg-navy-soft"
-                >
+              <div className="flex flex-wrap gap-2">
+                <Link href={`/map?vehicle=${a.vehicle.id}`} className="inline-flex min-h-11 items-center rounded-full px-3 text-sm font-bold underline underline-offset-4">
                   {t('alerts.viewOnMap')}
                 </Link>
-                {a.status === 'open' && can('alerts.handle') && (
-                  <Button variant="secondary" onClick={() => void handle(a)} aria-label={`${t('alerts.markHandled')} : ${txt.title}`}>
+                {mayHandle && (
+                  <button
+                    type="button"
+                    disabled={busy === a.id}
+                    onClick={() => void act(a, 'handle')}
+                    aria-label={`${t('alerts.markHandled')} : ${txt.title}`}
+                    className="min-h-11 rounded-full bg-surface-2 px-4 text-sm font-bold text-ink transition-transform hover:-translate-y-px disabled:opacity-60"
+                  >
                     {t('alerts.markHandled')}
-                  </Button>
+                  </button>
                 )}
               </div>
             </li>
           );
         })}
       </ul>
-    </>
+
+      {!!handled.data?.length && (
+        <>
+          <h2 className="mt-4 text-sm font-bold text-muted">{t('alerts.recentlyHandled')}</h2>
+          <ul className="flex flex-col gap-2.5" aria-label={t('alerts.handled')}>
+            {handled.data.map((a) => {
+              const txt = alertText(a);
+              return (
+                <li key={a.id} className="flex flex-wrap items-center gap-x-[18px] gap-y-2.5 rounded-[20px] bg-surface px-5 py-[18px]">
+                  <div className="min-w-0 flex-[1_1_280px]">
+                    <strong className="h-display mb-0.5 block text-2xl">{txt.title}</strong>
+                    <span className="text-[15px] text-muted">{txt.desc}</span>
+                    {a.handledAt && (
+                      <span className="mt-1 block text-[13px] text-muted">
+                        {t('alerts.handledBy', { name: a.handledBy?.name ?? '—', time: formatDateTime(a.handledAt) })}
+                        {a.note ? ` · ${a.note}` : ''}
+                      </span>
+                    )}
+                  </div>
+                  <span className="flex items-center gap-1.5 text-sm font-semibold">
+                    <span aria-hidden className="grid size-5 place-items-center rounded-full bg-ok-bg text-moving">
+                      ✓
+                    </span>
+                    {t('alerts.handledShort')}
+                  </span>
+                  {mayHandle && (
+                    <Button variant="secondary" disabled={busy === a.id} onClick={() => void act(a, 'reopen')} aria-label={`${t('alerts.reopen')} : ${txt.title}`}>
+                      {t('alerts.reopen')}
+                    </Button>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </>
+      )}
+      {open.data && n === 0 && !handled.data?.length && <EmptyState>{t('alerts.none')}</EmptyState>}
+    </section>
+  );
+}
+
+// ---------------- Rules: switch each one on or off ----------------
+
+function useRuleSummary(zones: GeofenceDto[] | undefined) {
+  const { t } = useI18n();
+  const zoneName = (id: unknown) => zones?.find((z) => z.id === id)?.name ?? '—';
+  return (r: AlertRuleDto) => {
+    const p = r.params as Record<string, unknown>;
+    switch (r.type) {
+      case 'speeding':
+        return t('rules.summary.speeding', { limit: p.limitKmh ? `${p.limitKmh} km/h` : t('rules.vehicleLimit'), seconds: Number(p.minDurationS ?? 0) });
+      case 'geofence_exit':
+      case 'geofence_enter':
+        return t(`rules.summary.${r.type}`, { zone: zoneName(p.geofenceId) });
+      case 'movement_schedule':
+        return t('rules.summary.movement_schedule', { count: (p.windows as unknown[] | undefined)?.length ?? 0 });
+      case 'device_offline':
+        return t('rules.summary.device_offline', { minutes: Number(p.afterMinutes) });
+      case 'low_battery':
+        return t('rules.summary.low_battery', { pct: Number(p.thresholdPct) });
+    }
+  };
+}
+
+function RulesAside() {
+  const { t } = useI18n();
+  const { org, can } = useSession();
+  const errorText = useErrorText();
+  const rules = useApiData<AlertRuleDto[]>(`/orgs/${org.orgId}/alert-rules`);
+  const zones = useApiData<GeofenceDto[]>(`/orgs/${org.orgId}/zones`);
+  const summary = useRuleSummary(zones.data);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  const writable = can('alerts.configure');
+
+  async function toggle(r: AlertRuleDto) {
+    setBusy(r.id);
+    setError(null);
+    try {
+      await api(`/orgs/${org.orgId}/alert-rules/${r.id}`, { method: 'PATCH', body: { enabled: !r.enabled } });
+      await rules.reload();
+    } catch (e) {
+      setError(errorText(e).message);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  return (
+    <aside aria-labelledby="rules-head" className="flex min-w-0 flex-[1_1_310px] flex-col gap-1.5 rounded-[20px] bg-surface p-5">
+      <h2 id="rules-head" className="h-display mb-2 text-2xl">
+        {t('alerts.settingsShort')}
+      </h2>
+      {error && <Notice tone="error">{error}</Notice>}
+      {!!rules.error && !rules.data && (
+        <p className="text-muted">
+          {t('common.loadFailed')}{' '}
+          <button type="button" className="min-h-11 font-bold text-ink underline underline-offset-4" onClick={() => void rules.reload()}>
+            {t('common.retry')}
+          </button>
+        </p>
+      )}
+      {!rules.data && !rules.error && <p role="status" className="text-muted">{t('common.loading')}</p>}
+      {rules.data?.length === 0 && <p className="text-muted">{t('rules.empty')}</p>}
+      {[...(rules.data ?? [])].sort((a, b) => a.createdAt.localeCompare(b.createdAt)).map((r) => (
+        <label key={r.id} className={cx('flex min-h-[50px] items-center justify-between gap-3 font-semibold', writable ? 'cursor-pointer' : 'cursor-default')}>
+          <span className="min-w-0">
+            {r.name}
+            <small className="block text-sm font-normal text-muted">
+              {summary(r)} · {r.enabled ? t('rules.enabled') : t('rules.disabled')}
+            </small>
+          </span>
+          <input
+            type="checkbox"
+            checked={r.enabled}
+            disabled={!writable || busy === r.id}
+            onChange={() => void toggle(r)}
+            className="size-[22px] shrink-0 accent-[var(--acc)]"
+            title={writable ? undefined : t('rules.noPermission')}
+          />
+        </label>
+      ))}
+      <Link
+        href="/alerts?tab=settings"
+        className="mt-2 inline-flex min-h-11 items-center justify-center rounded-full bg-surface-2 px-4 text-sm font-bold text-ink transition-transform hover:-translate-y-px"
+      >
+        {writable ? t('alerts.manageRules') : t('alerts.viewRules')}
+      </Link>
+    </aside>
   );
 }
 
@@ -154,7 +301,6 @@ function Settings() {
   const [editing, setEditing] = useState<AlertRuleDto | 'new' | null>(null);
   const [notice, setNotice] = useState<{ tone: 'success' | 'error'; text: string } | null>(null);
   const writable = can('alerts.configure');
-  const zoneName = (id: unknown) => zones.data?.find((z) => z.id === id)?.name ?? '—';
 
   async function toggle(r: AlertRuleDto) {
     try {
@@ -174,34 +320,19 @@ function Settings() {
     }
   }
 
-  const summary = (r: AlertRuleDto) => {
-    const p = r.params as Record<string, unknown>;
-    switch (r.type) {
-      case 'speeding':
-        return t('rules.summary.speeding', { limit: p.limitKmh ? `${p.limitKmh} km/h` : t('rules.vehicleLimit'), seconds: Number(p.minDurationS ?? 0) });
-      case 'geofence_exit':
-      case 'geofence_enter':
-        return t(`rules.summary.${r.type}`, { zone: zoneName(p.geofenceId) });
-      case 'movement_schedule':
-        return t('rules.summary.movement_schedule', { count: (p.windows as unknown[] | undefined)?.length ?? 0 });
-      case 'device_offline':
-        return t('rules.summary.device_offline', { minutes: Number(p.afterMinutes) });
-      case 'low_battery':
-        return t('rules.summary.low_battery', { pct: Number(p.thresholdPct) });
-    }
-  };
+  const summary = useRuleSummary(zones.data);
 
   return (
     <div className="flex flex-col gap-6">
       {notice && <Notice tone={notice.tone}>{notice.text}</Notice>}
       <Card className="p-5">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-xl font-bold">{t('rules.title')}</h2>
+          <h2 className="h-display text-2xl">{t('rules.title')}</h2>
           {writable && <Button onClick={() => setEditing('new')}>{t('rules.add')}</Button>}
         </div>
         {rules.data && rules.data.length === 0 && <p className="text-muted">{t('rules.empty')}</p>}
         <ul className="flex flex-col">
-          {(rules.data ?? []).map((r) => (
+          {[...(rules.data ?? [])].sort((a, b) => a.createdAt.localeCompare(b.createdAt)).map((r) => (
             <li key={r.id} className="flex flex-col gap-2 border-b border-line py-3 last:border-0 sm:flex-row sm:items-center">
               <div className="min-w-0 flex-1">
                 <p className="font-bold">
@@ -214,14 +345,14 @@ function Settings() {
               </div>
               {writable && (
                 <div className="flex flex-wrap items-center gap-2">
-                  <label className="flex min-h-10 items-center gap-2 text-sm">
-                    <input type="checkbox" checked={r.enabled} onChange={() => void toggle(r)} className="size-5 accent-navy" />
+                  <label className="flex min-h-11 items-center gap-2 text-sm">
+                    <input type="checkbox" checked={r.enabled} onChange={() => void toggle(r)} className="size-5 accent-[var(--acc)]" />
                     {t('rules.enabled')}
                   </label>
-                  <Button variant="secondary" className="min-h-10 px-3 text-sm" onClick={() => setEditing(r)} aria-label={`${t('common.edit')} ${r.name}`}>
+                  <Button variant="secondary" className="min-h-11 px-3 text-sm" onClick={() => setEditing(r)} aria-label={`${t('common.edit')} ${r.name}`}>
                     {t('common.edit')}
                   </Button>
-                  <Button variant="danger" className="min-h-10 px-3 text-sm" onClick={() => void remove(r)} aria-label={`${t('rules.remove')} ${r.name}`}>
+                  <Button variant="danger" className="min-h-11 px-3 text-sm" onClick={() => void remove(r)} aria-label={`${t('rules.remove')} ${r.name}`}>
                     {t('rules.remove')}
                   </Button>
                 </div>
@@ -400,16 +531,16 @@ function RuleDialog({
         <fieldset>
           <legend className="mb-2 text-sm font-medium text-muted">{t('rules.vehicles')}</legend>
           <label className="mb-2 flex items-center gap-2">
-            <input type="checkbox" className="size-5 accent-navy" checked={scope === null} onChange={(e) => setScope(e.target.checked ? null : [])} />
+            <input type="checkbox" className="size-5 accent-[var(--acc)]" checked={scope === null} onChange={(e) => setScope(e.target.checked ? null : [])} />
             {t('rules.allVehicles')}
           </label>
           {scope !== null && (
-            <div className="grid max-h-48 gap-1 overflow-y-auto rounded-xl border border-line p-3 sm:grid-cols-2">
+            <div className="grid max-h-48 gap-1 overflow-y-auto rounded-xl border-2 border-line p-3 sm:grid-cols-2">
               {vehicles.map((v) => (
                 <label key={v.id} className="flex items-center gap-2 text-sm">
                   <input
                     type="checkbox"
-                    className="size-5 accent-navy"
+                    className="size-5 accent-[var(--acc)]"
                     checked={scope.includes(v.id)}
                     onChange={(e) => setScope((s) => (e.target.checked ? [...(s ?? []), v.id] : (s ?? []).filter((x) => x !== v.id)))}
                   />
@@ -442,7 +573,7 @@ function Windows({ windows, onChange }: { windows: ScheduleWindow[]; onChange: (
       <p className="text-xs text-muted">{t('rules.allowedHelp')}</p>
       {windows.length === 0 && <Notice>{t('rules.noWindow')}</Notice>}
       {windows.map((w, i) => (
-        <div key={i} className="rounded-xl border border-line p-3">
+        <div key={i} className="rounded-xl border-2 border-line p-3">
           <div className="mb-2 flex flex-wrap gap-1.5" role="group" aria-label={t('rules.allowedHours')}>
             {[1, 2, 3, 4, 5, 6, 7].map((d) => (
               <Chip
@@ -541,8 +672,8 @@ function ZonesCard({ zones, reload, writable }: { zones: GeofenceDto[]; reload: 
           <Notice tone="error">{error}</Notice>
         </div>
       )}
-      <div className="grid gap-4 lg:grid-cols-[1fr_340px]">
-        <div className="h-[420px] overflow-hidden rounded-xl border border-line">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="h-[420px] overflow-hidden rounded-xl border-2 border-line">
           <ZoneEditor zones={zones} draft={draft} onDraftChange={setDraft} selectedId={selectedId} onSelect={setSelectedId} />
         </div>
         <div>
@@ -581,10 +712,10 @@ function ZonesCard({ zones, reload, writable }: { zones: GeofenceDto[]; reload: 
               ) : (
                 <div className="flex flex-wrap items-center gap-2 text-sm">
                   <span>{t('zones.points', { count: draft.points.length })}</span>
-                  <Button type="button" variant="ghost" className="min-h-9 px-2 text-sm" onClick={() => setDraft({ ...draft, points: draft.points.slice(0, -1) })}>
+                  <Button type="button" variant="ghost" className="min-h-11 px-3 text-sm" onClick={() => setDraft({ ...draft, points: draft.points.slice(0, -1) })}>
                     {t('zones.undo')}
                   </Button>
-                  <Button type="button" variant="ghost" className="min-h-9 px-2 text-sm" onClick={() => setDraft({ ...draft, points: [] })}>
+                  <Button type="button" variant="ghost" className="min-h-11 px-3 text-sm" onClick={() => setDraft({ ...draft, points: [] })}>
                     {t('zones.clear')}
                   </Button>
                 </div>
@@ -603,18 +734,18 @@ function ZonesCard({ zones, reload, writable }: { zones: GeofenceDto[]; reload: 
               {zones.length === 0 && <li className="text-muted">{t('zones.empty')}</li>}
               {zones.map((z) => (
                 <li key={z.id} className={cx('flex items-center justify-between gap-2 border-b border-line py-2.5 last:border-0', selectedId === z.id && 'font-semibold')}>
-                  <button type="button" className="min-w-0 truncate text-start hover:underline" onClick={() => setSelectedId(z.id)}>
+                  <button type="button" className="min-h-11 min-w-0 truncate text-start hover:underline" onClick={() => setSelectedId(z.id)}>
                     {z.name}
-                    <span className="block text-xs font-normal text-muted">
+                    <span className="block text-[13px] font-normal text-muted">
                       {z.shape.kind === 'circle' ? `${t('zones.circle')} · ${z.shape.radiusM} m` : `${t('zones.polygon')} · ${t('zones.points', { count: z.shape.points.length })}`}
                     </span>
                   </button>
                   {writable && (
                     <span className="flex shrink-0 gap-1">
-                      <Button variant="ghost" className="min-h-9 px-2 text-sm" onClick={() => startEdit(z)} aria-label={`${t('common.edit')} ${z.name}`}>
+                      <Button variant="ghost" className="min-h-11 px-3 text-sm" onClick={() => startEdit(z)} aria-label={`${t('common.edit')} ${z.name}`}>
                         {t('common.edit')}
                       </Button>
-                      <Button variant="ghost" className="min-h-9 px-2 text-sm text-danger" onClick={() => void remove(z)} aria-label={`${t('zones.remove')} ${z.name}`}>
+                      <Button variant="ghost" className="min-h-11 px-3 text-sm text-danger" onClick={() => void remove(z)} aria-label={`${t('zones.remove')} ${z.name}`}>
                         {t('zones.remove')}
                       </Button>
                     </span>

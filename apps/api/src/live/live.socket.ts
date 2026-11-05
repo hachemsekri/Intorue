@@ -114,8 +114,16 @@ export class LiveSocketHandler {
       } catch {
         /* handled below */
       }
-      const claims = typeof ticket === 'string' ? await this.tickets.redeem(ticket) : null;
-      if (!claims || !(await this.allowed(claims.userId, claims.orgId))) {
+      // A database hiccup here must not crash the API: refuse this socket; the client reconnects.
+      let claims: Awaited<ReturnType<LiveTickets['redeem']>> = null;
+      let ok = false;
+      try {
+        claims = typeof ticket === 'string' ? await this.tickets.redeem(ticket) : null;
+        ok = !!claims && (await this.allowed(claims.userId, claims.orgId));
+      } catch (e) {
+        this.logger.warn(`Live auth failed: ${e instanceof Error ? e.message : String(e)}`);
+      }
+      if (!claims || !ok) {
         send({ type: 'error', code: 'unauthorized' });
         socket.close(WS_CLOSE.unauthorized, 'unauthorized');
         return;
@@ -127,9 +135,13 @@ export class LiveSocketHandler {
         else send({ type: 'alert', data: e.alert });
       });
       recheck = setInterval(() => {
-        void this.allowed(claims.userId, claims.orgId).then((ok) => {
-          if (!ok) socket.close(WS_CLOSE.forbidden, 'membership');
-        });
+        void this.allowed(claims.userId, claims.orgId).then(
+          (stillOk) => {
+            if (!stillOk) socket.close(WS_CLOSE.forbidden, 'membership');
+          },
+          // Database hiccup: keep the socket and check again next time (a later "no" still closes it).
+          (e: unknown) => this.logger.warn(`Live recheck failed: ${e instanceof Error ? e.message : String(e)}`),
+        );
       }, RECHECK_MS);
       recheck.unref();
       send({ type: 'hello', orgId: claims.orgId });

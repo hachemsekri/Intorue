@@ -57,6 +57,8 @@ ${script}
     const max = opts.poolMax ?? 10;
     // With a single connection, release it quickly when idle so scripts (seed) can connect too.
     const pool = new Pool({ connectionString: url, max, idleTimeoutMillis: max === 1 ? 1000 : 10_000 });
+    // A dropped idle connection is routine; without a listener Node treats it as fatal.
+    pool.on('error', (e: Error) => console.warn(`[db] idle connection error: ${e.message}`));
     db = drizzle(pool, { schema }) as unknown as Db;
     close = () => pool.end();
     execScript = async (script) => {

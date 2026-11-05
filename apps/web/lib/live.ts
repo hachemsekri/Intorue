@@ -33,6 +33,30 @@ export function useLiveVehicles(orgId: string) {
     let closed = false;
     let attempt = 0;
     let retry: ReturnType<typeof setTimeout> | undefined;
+    // Positions are applied in batches (at most twice a second), and held while the page is hidden.
+    const pending = new Map<string, VehicleLiveDto>();
+    let flushTimer: ReturnType<typeof setTimeout> | undefined;
+    const flush = () => {
+      flushTimer = undefined;
+      if (!pending.size || document.visibilityState !== 'visible') return;
+      const batch = [...pending.values()];
+      pending.clear();
+      setById((prev) => {
+        const next = new Map(prev);
+        for (const v of batch) next.set(v.vehicleId, v);
+        return next;
+      });
+      setLastEventAt(new Date());
+    };
+    const scheduleFlush = () => {
+      if (!flushTimer) flushTimer = setTimeout(flush, 500);
+    };
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible') return;
+      setNow(new Date());
+      flush();
+    };
+    document.addEventListener('visibilitychange', onVisible);
 
     async function connect() {
       try {
@@ -48,8 +72,8 @@ export function useLiveVehicles(orgId: string) {
             attempt = 0;
             setConnection('live');
           } else if (e.type === 'vehicle') {
-            setById((prev) => new Map(prev).set(e.data.vehicleId, e.data));
-            setLastEventAt(new Date());
+            pending.set(e.data.vehicleId, e.data);
+            scheduleFlush();
           }
         };
         ws.onclose = () => {
@@ -70,10 +94,12 @@ export function useLiveVehicles(orgId: string) {
     }
 
     void connect();
-    const tick = setInterval(() => setNow(new Date()), 10_000);
+    const tick = setInterval(() => document.visibilityState === 'visible' && setNow(new Date()), 10_000);
     return () => {
       closed = true;
       clearTimeout(retry);
+      clearTimeout(flushTimer);
+      document.removeEventListener('visibilitychange', onVisible);
       clearInterval(tick);
       wsRef.current?.close();
     };

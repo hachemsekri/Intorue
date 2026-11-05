@@ -31,8 +31,8 @@ function LoginForm() {
 
   return (
     <>
-      <h1 className="text-3xl font-extrabold tracking-tight">{t('auth.signInTitle')}</h1>
-      <p className="mt-1 mb-8 text-muted">{t('auth.signInSubtitle')}</p>
+      <h1 className="h-display text-[clamp(36px,5vw,48px)]">{t('auth.signInTitle')}</h1>
+      <p className="mt-2 mb-7 text-muted">{t('auth.signInSubtitle')}</p>
       <form onSubmit={onSubmit} className="flex flex-col gap-5" noValidate>
         {error && <Notice tone="error">{error}</Notice>}
         <Field label={t('auth.email')}>{(p) => <Input {...p} name="email" type="email" autoComplete="email" required dir="ltr" />}</Field>
@@ -40,7 +40,7 @@ function LoginForm() {
           {(p) => <Input {...p} name="password" type="password" autoComplete="current-password" required />}
         </Field>
         <div className="-mt-2 text-end">
-          <Link href="/forgot-password" className="text-sm font-medium text-teal-dark underline-offset-4 hover:underline">
+          <Link href="/forgot-password" className="text-sm font-medium text-acc-text underline-offset-4 hover:underline">
             {t('auth.forgot')}
           </Link>
         </div>
@@ -50,7 +50,7 @@ function LoginForm() {
       </form>
       <p className="mt-8 text-center text-muted">
         {t('auth.noAccount')}{' '}
-        <Link href="/signup" className="font-semibold text-navy underline-offset-4 hover:underline">
+        <Link href="/signup" className="font-semibold text-ink underline-offset-4 hover:underline">
           {t('auth.createAccount')}
         </Link>
       </p>

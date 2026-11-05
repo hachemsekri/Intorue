@@ -62,8 +62,21 @@ process.on('SIGINT', stop);
 process.on('SIGTERM', stop);
 
 if (localDb) {
-  run(['--filter', '@winou/api', 'run', 'db:server'], 'database');
-  await waitForPort(5433);
+  // A database server already running is reused: restarting the apps must never touch it
+  // (killing it mid-write can damage its data folder).
+  const running = await new Promise((ok) => {
+    const s = connect(5433, '127.0.0.1');
+    s.once('connect', () => {
+      s.end();
+      ok(true);
+    });
+    s.once('error', () => ok(false));
+  });
+  if (running) console.log('[dev] Reusing the database already running on port 5433.');
+  else {
+    run(['--filter', '@winou/api', 'run', 'db:server'], 'database');
+    await waitForPort(5433);
+  }
 }
 if (process.argv.includes('--prod')) {
   run(['--filter', '@winou/api', '--filter', '@winou/web', '--parallel', 'run', 'start'], 'apps');

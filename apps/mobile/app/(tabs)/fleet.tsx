@@ -3,13 +3,15 @@ import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { C, s } from '@/components/ui';
+import {statusColor, useStyles, useTheme} from '@/components/ui';
 import { PlateText } from '@/components/VehicleBits';
 import { useI18n } from '@/lib/i18n';
-import { STATUS_COLOR, useLiveVehicles } from '@/lib/live';
+import { useLiveVehicles } from '@/lib/live';
 import { useSession } from '@/lib/session';
 
 export default function Fleet() {
+  const { T } = useTheme();
+  const s = useStyles();
   const { t, formatRelative } = useI18n();
   const { org } = useSession();
   const { vehicles, reload } = useLiveVehicles(org?.orgId);
@@ -46,8 +48,8 @@ export default function Fleet() {
             </Text>
             <View style={[s.row, { gap: 8 }]}>
               {(['moving', 'stopped', 'offline'] as const).map((k) => (
-                <View key={k} style={[s.card, { flex: 1, padding: 12, backgroundColor: k === 'offline' && counts.offline ? '#FDEFE3' : '#fff' }]}>
-                  <Text style={{ fontSize: 24, fontWeight: '800', color: k === 'offline' && counts.offline ? '#B34A07' : C.navy }}>{counts[k] ?? 0}</Text>
+                <View key={k} style={[s.card, { flex: 1, padding: 12, backgroundColor: k === 'offline' && counts.offline ? T.warnbg : '#fff' }]}>
+                  <Text style={{ fontSize: 24, fontWeight: '800', color: k === 'offline' && counts.offline ? T.warn : T.ink }}>{counts[k] ?? 0}</Text>
                   <Text style={s.muted}>{t(`map.kpis.${k}`)}</Text>
                 </View>
               ))}
@@ -67,9 +69,9 @@ export default function Fleet() {
                   accessibilityRole="button"
                   accessibilityState={{ selected: type === k }}
                   onPress={() => setType(k)}
-                  style={{ paddingHorizontal: 16, minHeight: 40, justifyContent: 'center', borderRadius: 999, borderWidth: 1, borderColor: type === k ? C.navy : C.border, backgroundColor: type === k ? C.navy : '#fff' }}
+                  style={{ paddingHorizontal: 16, minHeight: 40, justifyContent: 'center', borderRadius: 999, borderWidth: 1, borderColor: type === k ? T.ink : T.line, backgroundColor: type === k ? T.ink : '#fff' }}
                 >
-                  <Text style={{ color: type === k ? '#fff' : C.navy, fontWeight: type === k ? '700' : '400', fontSize: 15 }}>
+                  <Text style={{ color: type === k ? '#fff' : T.ink, fontWeight: type === k ? '700' : '400', fontSize: 15 }}>
                     {k === 'all' ? t('common.all') : t(`vehicles.typesPlural.${k}`)}
                   </Text>
                 </Pressable>
@@ -83,15 +85,15 @@ export default function Fleet() {
             accessibilityRole="button"
             accessibilityLabel={`${v.name}, ${t(`map.statuses.${v.status}`)}`}
             onPress={() => router.push(`/vehicle/${v.vehicleId}`)}
-            style={({ pressed }) => [s.row, { backgroundColor: pressed ? C.background : '#fff', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: C.border, gap: 12 }]}
+            style={({ pressed }) => [s.row, { backgroundColor: pressed ? T.bg : '#fff', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: T.line, gap: 12 }]}
           >
-            <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: STATUS_COLOR[v.status] }} />
+            <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: statusColor(T)[v.status] }} />
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 17, fontWeight: '700', color: C.navy }}>{v.name}</Text>
+              <Text style={{ fontSize: 17, fontWeight: '700', color: T.ink }}>{v.name}</Text>
               <PlateText plate={v.plate} format={v.plateFormat} style={s.muted} />
             </View>
             <View style={{ alignItems: 'flex-end' }}>
-              <Text style={{ color: STATUS_COLOR[v.status], fontWeight: '600' }}>{t(`map.statuses.${v.status}`)}</Text>
+              <Text style={{ color: statusColor(T)[v.status], fontWeight: '600' }}>{t(`map.statuses.${v.status}`)}</Text>
               <Text style={s.muted}>
                 {v.status === 'moving' && v.position ? `${Math.round(v.position.speedKmh)} ${t('map.kmh')}` : v.device?.lastSeenAt ? formatRelative(v.device.lastSeenAt) : '—'}
               </Text>

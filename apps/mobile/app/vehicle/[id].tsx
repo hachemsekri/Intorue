@@ -3,7 +3,7 @@ import { Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useRef } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { MapWeb, type MapHandle } from '@/components/MapWeb';
-import { C, Card, s } from '@/components/ui';
+import {Card, statusColor, useStyles, useTheme} from '@/components/ui';
 import { PlateText } from '@/components/VehicleBits';
 import { useI18n } from '@/lib/i18n';
 import { useApi, useSession } from '@/lib/session';
@@ -29,6 +29,8 @@ function dur(sec: number) {
 
 /** Vehicle details and today's trips: KPIs, route, timeline. */
 export default function VehicleScreen() {
+  const { T } = useTheme();
+  const s = useStyles();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t, locale, formatTime } = useI18n();
   numberLocale = locale === 'ar' ? 'ar-TN-u-nu-latn' : locale === 'en' ? 'en-GB' : 'fr-TN';
@@ -47,9 +49,9 @@ export default function VehicleScreen() {
       type: 'route',
       paths: r.trips.map((x) => x.path),
       points: [
-        ...r.trips.map((x) => ({ lon: x.start.lon, lat: x.start.lat, color: '#0B2440' })),
-        ...r.trips.map((x) => ({ lon: x.end.lon, lat: x.end.lat, color: '#0E8A87' })),
-        ...r.events.filter((e) => e.position).map((e) => ({ lon: e.position!.lon, lat: e.position!.lat, color: '#C2540A' })),
+        ...r.trips.map((x) => ({ lon: x.start.lon, lat: x.start.lat, color: T.ink })),
+        ...r.trips.map((x) => ({ lon: x.end.lon, lat: x.end.lat, color: T.moving })),
+        ...r.events.filter((e) => e.position).map((e) => ({ lon: e.position!.lon, lat: e.position!.lat, color: T.warn })),
       ],
     });
   }, [r]);
@@ -81,17 +83,17 @@ export default function VehicleScreen() {
           <Kpi label={t('trips.maxSpeed')} value={r ? `${r.summary.maxSpeedKmh} km/h` : '—'} />
           <Kpi label={t('trips.events')} value={r ? String(r.summary.events) : '—'} warn={!!r?.summary.events} />
         </View>
-        <View style={{ height: 280, borderRadius: 16, overflow: 'hidden', backgroundColor: '#fff' }}>
+        <View style={{ height: 280, borderRadius: 16, overflow: 'hidden', backgroundColor: T.surf }}>
           <MapWeb ref={map} locale={locale} />
         </View>
         <Card style={{ gap: 0 }}>
           <Text style={[s.h2, { marginBottom: 8 }]}>{t('trips.timeline')}</Text>
           {r && items.length === 0 && <Text style={s.muted}>{t('trips.noTrips')}</Text>}
           {items.map((it, i) => (
-            <View key={i} style={[s.row, { alignItems: 'flex-start', gap: 12, paddingVertical: 10, borderTopWidth: i ? 1 : 0, borderTopColor: C.border }]}>
+            <View key={i} style={[s.row, { alignItems: 'flex-start', gap: 12, paddingVertical: 10, borderTopWidth: i ? 1 : 0, borderTopColor: T.line }]}>
               <Text style={[s.muted, { width: 48, fontWeight: '600' }]}>{formatTime(it.at)}</Text>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontWeight: '700', color: it.warn ? '#B34A07' : C.navy }}>{it.title}</Text>
+                <Text style={{ fontWeight: '700', color: it.warn ? T.warn : T.ink }}>{it.title}</Text>
                 <Text style={s.muted}>{it.sub}</Text>
               </View>
             </View>
@@ -103,10 +105,12 @@ export default function VehicleScreen() {
 }
 
 function Kpi({ label, value, warn }: { label: string; value: string; warn?: boolean }) {
+  const { T } = useTheme();
+  const s = useStyles();
   return (
-    <View style={[s.card, { width: '48.5%', padding: 12, backgroundColor: warn ? '#FDEFE3' : '#fff' }]}>
-      <Text style={[s.muted, warn ? { color: '#B34A07' } : null]}>{label}</Text>
-      <Text style={{ fontSize: 22, fontWeight: '800', color: warn ? '#B34A07' : C.navy }}>{value}</Text>
+    <View style={[s.card, { width: '48.5%', padding: 12, backgroundColor: warn ? T.warnbg : '#fff' }]}>
+      <Text style={[s.muted, warn ? { color: T.warn } : null]}>{label}</Text>
+      <Text style={{ fontSize: 22, fontWeight: '800', color: warn ? T.warn : T.ink }}>{value}</Text>
     </View>
   );
 }

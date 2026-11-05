@@ -2,6 +2,7 @@ import { createElement, forwardRef, useEffect, useImperativeHandle, useRef, type
 import { Platform, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { WEB_URL } from '@/lib/config';
+import { useTheme } from '@/lib/theme';
 
 // react-native-webview's class typings do not line up with the React 19.3 types yet.
 const WV = WebView as unknown as ComponentType<Record<string, unknown>>;
@@ -24,7 +25,8 @@ export const MapWeb = forwardRef<MapHandle, { locale: string; onReady?: () => vo
   const ready = useRef(false);
   const cb = useRef({ onReady, onSelect });
   cb.current = { onReady, onSelect };
-  const src = `${WEB_URL}/embed/map?lang=${locale}`;
+  const { name: theme } = useTheme();
+  const src = `${WEB_URL}/embed/map?lang=${locale}&theme=${theme}`;
 
   const send = (msg: object) => {
     const s = JSON.stringify(msg);

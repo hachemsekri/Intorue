@@ -43,6 +43,13 @@ export class AlertsController {
   ) {
     return this.alerts.handle(org.id, id, body.note, { userId: user.id, ip });
   }
+
+  @RequirePermission('alerts.handle')
+  @HttpCode(200)
+  @Post(':id/reopen')
+  reopen(@CurrentOrg() org: OrgContext, @UuidParam('id') id: string, @CurrentUser() user: AuthUser, @ClientIp() ip: string) {
+    return this.alerts.reopen(org.id, id, { userId: user.id, ip });
+  }
 }
 
 @Controller('orgs/:orgId/alert-rules')

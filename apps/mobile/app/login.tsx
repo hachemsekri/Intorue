@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Button, Field, Notice, Wordmark, s } from '@/components/ui';
+import {Button, Field, Notice, Wordmark, statusColor, useStyles, useTheme} from '@/components/ui';
 import { ApiError } from '@/lib/api';
 import { API_URL } from '@/lib/config';
 import { useI18n } from '@/lib/i18n';
 import { useSession } from '@/lib/session';
 
 export default function Login() {
+  const { T } = useTheme();
+  const s = useStyles();
   const { t, tx } = useI18n();
   const { signIn } = useSession();
   const [email, setEmail] = useState('');

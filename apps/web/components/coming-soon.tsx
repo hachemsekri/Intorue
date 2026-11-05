@@ -9,7 +9,7 @@ export function ComingSoon({ title }: { title: MessageKey }) {
     <>
       <PageHeader title={t(title)} />
       <EmptyState>
-        <p className="text-lg font-semibold text-navy">{t('common.comingSoon')}</p>
+        <p className="text-lg font-semibold text-ink">{t('common.comingSoon')}</p>
         <p className="mt-1">{t('common.comingSoonBody')}</p>
       </EmptyState>
     </>

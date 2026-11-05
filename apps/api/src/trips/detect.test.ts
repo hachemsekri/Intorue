@@ -102,3 +102,17 @@ describe('trip detection', () => {
     expect(distanceM({ lat: 36.8065, lon: 10.1815 }, { lat: 36.4, lon: 10.6084 })).toBeGreaterThan(58_000);
   });
 });
+
+describe('speedProfile', () => {
+  it('keeps every point for short trips and the peaks for long ones', async () => {
+    const { speedProfile } = await import('./detect');
+    const t0 = new Date('2026-11-04T08:00:00Z').getTime();
+    const mk = (i: number, kmh: number) => ({ at: new Date(t0 + i * 10_000), lat: 36.8, lon: 10.18, speedKmh: kmh });
+    expect(speedProfile([mk(0, 0), mk(1, 30.4), mk(2, 50)])).toEqual([[0, 0], [10, 30], [20, 50]]);
+    const long = Array.from({ length: 1000 }, (_, i) => mk(i, i === 517 ? 131 : 40));
+    const p = speedProfile(long, 100);
+    expect(p.length).toBeLessThanOrEqual(101);
+    expect(Math.max(...p.map((x) => x[1]))).toBe(131);
+    expect(p[p.length - 1]![0]).toBe(9990);
+  });
+});

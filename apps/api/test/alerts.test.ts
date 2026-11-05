@@ -215,6 +215,16 @@ describe('alert inbox', () => {
     expect((await inbox(a)).some((x) => x.id === first!.id)).toBe(false);
     const count = await call(t, 'GET', `/orgs/${a.orgId}/alerts/count`, { token: viewer.token });
     expect(count.body.open).toBe((await inbox(a)).length);
+
+    // Reopen: same permission as handling, scoped to the organization, and audited.
+    expect((await call(t, 'POST', `/orgs/${a.orgId}/alerts/${first!.id}/reopen`, { token: viewer.token })).status).toBe(403);
+    expect((await call(t, 'POST', `/orgs/${b.orgId}/alerts/${first!.id}/reopen`, { token: b.token })).status).toBe(404);
+    const r = await call(t, 'POST', `/orgs/${a.orgId}/alerts/${first!.id}/reopen`, { token: manager.token });
+    expect(r.status).toBe(200);
+    expect(r.body).toMatchObject({ status: 'open', handledAt: null, handledBy: null, note: null });
+    expect((await inbox(a)).some((x) => x.id === first!.id)).toBe(true);
+    const audit = await t.deps.db.system.execute(sql`select 1 from audit_log where action = 'alert.reopened' and target_id = ${first!.id}`);
+    expect(audit.rows.length).toBe(1);
   });
 
   it('Row-Level Security: alerts are invisible and read-only across organizations', async () => {

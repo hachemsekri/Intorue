@@ -12,6 +12,7 @@ import {
 } from 'react';
 import { useI18n } from '@/lib/i18n';
 import { ApiError } from '@/lib/api';
+import { ThemeToggle } from './theme-toggle';
 
 const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(' ');
 
@@ -24,11 +25,11 @@ export const Button = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTMLBut
         disabled={disabled || busy}
         aria-busy={busy || undefined}
         className={cx(
-          'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 text-[15px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60',
-          variant === 'primary' && 'bg-navy text-white hover:bg-navy-soft',
-          variant === 'secondary' && 'border border-line bg-white text-navy hover:bg-canvas',
-          variant === 'ghost' && 'text-navy hover:bg-canvas',
-          variant === 'danger' && 'border border-line bg-white text-danger hover:bg-danger-bg',
+          'inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-5 text-[15px] transition-[transform,filter,background-color] disabled:cursor-not-allowed disabled:opacity-60 enabled:hover:-translate-y-px',
+          variant === 'primary' && 'min-h-12 bg-acc font-extrabold text-on-acc enabled:hover:brightness-110',
+          variant === 'secondary' && 'bg-surface-2 font-bold text-ink',
+          variant === 'ghost' && 'font-bold text-ink hover:bg-surface-2',
+          variant === 'danger' && 'bg-surface-2 font-bold text-danger hover:bg-danger-bg',
           className,
         )}
         {...rest}
@@ -58,13 +59,13 @@ export function Field({
   const errId = error ? `${id}-err` : undefined;
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="text-sm font-medium text-muted">
+      <label htmlFor={id} className="text-sm font-semibold text-ink">
         {label}
         {optional && <span className="font-normal"> ({t('common.optional')})</span>}
       </label>
       {children({ id, 'aria-describedby': [hintId, errId].filter(Boolean).join(' ') || undefined, 'aria-invalid': !!error || undefined })}
       {hint && (
-        <p id={hintId} className="text-xs text-muted">
+        <p id={hintId} className="text-[13px] text-muted">
           {hint}
         </p>
       )}
@@ -78,7 +79,7 @@ export function Field({
 }
 
 const inputCls =
-  'min-h-11 w-full rounded-xl border border-line bg-white px-3.5 text-[15px] text-ink placeholder:text-muted/70 aria-[invalid=true]:border-danger';
+  'min-h-12 w-full rounded-xl border-2 border-transparent bg-surface-2 px-3.5 text-[15px] font-medium text-ink focus:border-acc focus:outline-none focus-visible:outline-none aria-[invalid=true]:border-danger';
 
 export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(function Input({ className, ...rest }, ref) {
   return <input ref={ref} className={cx(inputCls, className)} {...rest} />;
@@ -98,8 +99,8 @@ export function Chip({ active, children, ...rest }: ButtonHTMLAttributes<HTMLBut
       type="button"
       aria-pressed={active}
       className={cx(
-        'min-h-10 rounded-full border px-4 text-[15px] transition-colors',
-        active ? 'border-navy bg-navy font-semibold text-white' : 'border-line bg-white text-navy hover:bg-canvas',
+        'min-h-11 rounded-full px-4 text-sm font-semibold transition-[transform,background-color,color] hover:-translate-y-px',
+        active ? 'bg-ink text-canvas' : 'bg-surface-2 text-ink',
       )}
       {...rest}
     >
@@ -113,9 +114,9 @@ export function Badge({ tone, children, dot = true }: { tone: Tone; children: Re
   const styles: Record<Tone, string> = {
     moving: 'bg-ok-bg text-moving',
     stopped: 'bg-info-bg text-stopped',
-    offline: 'bg-canvas text-offline',
+    offline: 'bg-surface-2 text-offline',
     attention: 'bg-attention-bg text-attention',
-    neutral: 'bg-canvas text-muted',
+    neutral: 'bg-surface-2 text-muted',
     danger: 'bg-danger-bg text-danger',
   };
   const dots: Record<Tone, string> = {
@@ -161,15 +162,15 @@ export function Dialog({
       aria-labelledby={titleId}
       onClose={onClose}
       onCancel={onClose}
-      className="m-auto w-[min(560px,calc(100vw-32px))] rounded-[var(--radius-card)] bg-white p-0 text-ink shadow-2xl"
+      className="m-auto w-[min(560px,calc(100vw-32px))] rounded-[var(--radius-card)] bg-surface p-0 text-ink shadow-2xl"
     >
       {open && (
         <div className="flex max-h-[85vh] flex-col">
-          <div className="flex items-center justify-between gap-4 border-b border-line px-6 py-4">
-            <h2 id={titleId} className="text-lg font-bold">
+          <div className="flex items-center justify-between gap-4 px-6 pt-5 pb-2">
+            <h2 id={titleId} className="h-display text-2xl">
               {title}
             </h2>
-            <button type="button" onClick={onClose} className="grid size-10 place-items-center rounded-lg text-muted hover:bg-canvas" aria-label={t('common.close')}>
+            <button type="button" onClick={onClose} className="grid size-11 place-items-center rounded-[14px] text-muted hover:bg-surface-2" aria-label={t('common.close')}>
               <svg aria-hidden width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
                 <path d="M6 6l12 12M18 6L6 18" />
               </svg>
@@ -182,20 +183,23 @@ export function Dialog({
   );
 }
 
-export function PageHeader({ title, subtitle, actions }: { title: string; subtitle?: ReactNode; actions?: ReactNode }) {
+export function PageHeader({ title, subtitle, actions }: { title: ReactNode; subtitle?: ReactNode; actions?: ReactNode }) {
   return (
-    <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-      <div>
-        <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">{title}</h1>
+    <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+      <div className="min-w-0">
+        <h1 className="h-display text-[clamp(30px,3vw,44px)]">{title}</h1>
         {subtitle && <p className="mt-1 text-muted">{subtitle}</p>}
       </div>
-      {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
+      <div className="flex flex-wrap items-center gap-2">
+        {actions}
+        <ThemeToggle desktopOnly />
+      </div>
     </div>
   );
 }
 
 export function Card({ children, className }: { children: ReactNode; className?: string }) {
-  return <div className={cx('rounded-[var(--radius-card)] bg-white', className)}>{children}</div>;
+  return <div className={cx('rounded-[var(--radius-card)] bg-surface', className)}>{children}</div>;
 }
 
 export function Notice({ tone = 'info', children }: { tone?: 'info' | 'error' | 'success'; children: ReactNode }) {
@@ -203,10 +207,10 @@ export function Notice({ tone = 'info', children }: { tone?: 'info' | 'error' | 
     <div
       role={tone === 'error' ? 'alert' : 'status'}
       className={cx(
-        'rounded-xl px-4 py-3 text-sm',
+        'rounded-2xl px-4 py-3 text-sm',
         tone === 'error' && 'bg-danger-bg text-danger',
-        tone === 'success' && 'bg-ok-bg text-moving',
-        tone === 'info' && 'bg-info-bg text-navy',
+        tone === 'success' && 'bg-ok-bg font-semibold text-moving',
+        tone === 'info' && 'bg-info-bg text-ink',
       )}
     >
       {children}
@@ -215,7 +219,7 @@ export function Notice({ tone = 'info', children }: { tone?: 'info' | 'error' | 
 }
 
 export function EmptyState({ children }: { children: ReactNode }) {
-  return <div className="rounded-[var(--radius-card)] border border-dashed border-line bg-white px-6 py-12 text-center text-muted">{children}</div>;
+  return <div className="rounded-[var(--radius-card)] bg-surface px-6 py-12 text-center text-muted">{children}</div>;
 }
 
 export function DemoBadge() {

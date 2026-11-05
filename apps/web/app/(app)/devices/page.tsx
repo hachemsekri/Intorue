@@ -3,6 +3,8 @@
 import type { DeviceDto, VehicleDto } from '@winou/shared';
 import { useState, type FormEvent } from 'react';
 import { DeviceStatusBadge, LastSeen, Plate } from '@/components/fleet-bits';
+import { FleetTabs } from '@/components/fleet-tabs';
+import { LoadError } from '@/components/load-error';
 import { Badge, Button, Dialog, EmptyState, Field, Input, Notice, PageHeader, Select, useErrorText } from '@/components/ui';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
@@ -32,10 +34,11 @@ export default function DevicesPage() {
   }
 
   return (
-    <>
-      <PageHeader title={t('devices.title')} actions={writable && <Button onClick={() => setAdding(true)}>{t('devices.add')}</Button>} />
-      <label className="mb-4 flex min-h-10 items-center gap-2 text-sm">
-        <input type="checkbox" checked={archived} onChange={(e) => setArchived(e.target.checked)} className="size-5 accent-navy" />
+    <div className="fade-in">
+      <PageHeader title={t('vehicles.pageTitle')} actions={writable && <Button onClick={() => setAdding(true)}>{t('devices.add')}</Button>} />
+      <FleetTabs />
+      <label className="mb-4 flex min-h-11 items-center gap-2 text-sm font-semibold">
+        <input type="checkbox" checked={archived} onChange={(e) => setArchived(e.target.checked)} className="size-5 accent-[var(--acc)]" />
         {t('devices.showArchived')}
       </label>
       {notice && (
@@ -43,36 +46,71 @@ export default function DevicesPage() {
           <Notice tone={notice.tone}>{notice.text}</Notice>
         </div>
       )}
-      {error ? <Notice tone="error">{errorText(error).message}</Notice> : null}
+      {error && !data ? <LoadError onRetry={() => void reload()} /> : null}
       {loading && !data && <p role="status" className="text-muted">{t('common.loading')}</p>}
       {data && data.length === 0 && <EmptyState>{t('devices.empty')}</EmptyState>}
 
       {data && data.length > 0 && (
-        <div className="overflow-x-auto rounded-[var(--radius-card)] bg-white">
-          <table className="w-full min-w-[720px] text-start">
+        <ul className="flex flex-col gap-2 sm:hidden" aria-label={t('devices.title')}>
+          {data.map((d) => (
+            <li key={d.id} className="flex flex-col gap-2 rounded-[20px] bg-surface p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <strong className="ltr-isolate tabular-nums">{d.imei}</strong>
+                {d.archivedAt ? <Badge tone="neutral">{t('vehicles.archived')}</Badge> : <DeviceStatusBadge status={d.status} />}
+              </div>
+              {(d.label || d.model) && <p className="text-[13px] text-muted">{[d.label, d.model].filter(Boolean).join(' · ')}</p>}
+              <p className="flex flex-wrap justify-between gap-x-3 text-[13px] text-muted">
+                <span>
+                  {t('devices.linkedTo')} <span className="font-semibold text-ink">{d.vehicle ? d.vehicle.name : t('common.none')}</span>
+                </span>
+                <LastSeen at={d.lastSeenAt} />
+              </p>
+              {writable && !d.archivedAt && (
+                <div className="flex gap-1">
+                  {d.vehicle ? (
+                    <Button variant="secondary" className="flex-1 text-sm" onClick={() => void act(d, 'unlink')} aria-label={`${t('devices.unlink')} ${d.imei}`}>
+                      {t('devices.unlink')}
+                    </Button>
+                  ) : (
+                    <Button variant="secondary" className="flex-1 text-sm" onClick={() => setLinking(d)} aria-label={`${t('devices.link')} ${d.imei}`}>
+                      {t('devices.link')}
+                    </Button>
+                  )}
+                  <Button variant="ghost" className="flex-1 text-sm" onClick={() => void act(d, 'archive')} aria-label={`${t('common.archive')} ${d.imei}`}>
+                    {t('common.archive')}
+                  </Button>
+                </div>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      {data && data.length > 0 && (
+        <div className="relative hidden overflow-x-auto rounded-[20px] bg-surface sm:block">
+          <table className="w-full min-w-[720px] border-collapse text-start">
             <thead>
-              <tr className="border-b border-line text-sm text-muted">
-                <th scope="col" className="px-5 py-3 text-start font-medium">{t('devices.imei')}</th>
-                <th scope="col" className="px-5 py-3 text-start font-medium">{t('devices.status')}</th>
-                <th scope="col" className="px-5 py-3 text-start font-medium">{t('devices.lastSeen')}</th>
-                <th scope="col" className="px-5 py-3 text-start font-medium">{t('devices.linkedTo')}</th>
-                {writable && <th scope="col" className="px-5 py-3 text-end font-medium"><span className="sr-only">{t('common.actions')}</span></th>}
+              <tr className="text-[13px] text-muted">
+                <th scope="col" className="px-4 py-3 text-start font-bold">{t('devices.imei')}</th>
+                <th scope="col" className="px-4 py-3 text-start font-bold">{t('devices.status')}</th>
+                <th scope="col" className="px-4 py-3 text-start font-bold">{t('devices.lastSeen')}</th>
+                <th scope="col" className="px-4 py-3 text-start font-bold">{t('devices.linkedTo')}</th>
+                {writable && <th scope="col" className="px-4 py-3 text-end font-bold"><span className="sr-only">{t('common.actions')}</span></th>}
               </tr>
             </thead>
             <tbody>
               {data.map((d) => (
-                <tr key={d.id} className="border-b border-line last:border-0">
-                  <td className="px-5 py-4">
+                <tr key={d.id} className="odd:bg-zebra">
+                  <td className="px-4 py-3">
                     <p className="ltr-isolate font-semibold tabular-nums">{d.imei}</p>
                     {(d.label || d.model) && <p className="text-sm text-muted">{[d.label, d.model].filter(Boolean).join(' · ')}</p>}
                   </td>
-                  <td className="px-5 py-4">
+                  <td className="px-4 py-3">
                     {d.archivedAt ? <Badge tone="neutral">{t('vehicles.archived')}</Badge> : <DeviceStatusBadge status={d.status} />}
                   </td>
-                  <td className="px-5 py-4">
+                  <td className="px-4 py-3">
                     <LastSeen at={d.lastSeenAt} />
                   </td>
-                  <td className="px-5 py-4">
+                  <td className="px-4 py-3">
                     {d.vehicle ? (
                       <span>
                         <span className="font-medium">{d.vehicle.name}</span>
@@ -85,19 +123,19 @@ export default function DevicesPage() {
                     )}
                   </td>
                   {writable && (
-                    <td className="px-5 py-4">
+                    <td className="px-4 py-3">
                       {!d.archivedAt && (
                         <div className="flex justify-end gap-2">
                           {d.vehicle ? (
-                            <Button variant="secondary" className="min-h-10 px-3 text-sm" onClick={() => void act(d, 'unlink')} aria-label={`${t('devices.unlink')} ${d.imei}`}>
+                            <Button variant="secondary" className="min-h-11 px-3 text-sm" onClick={() => void act(d, 'unlink')} aria-label={`${t('devices.unlink')} ${d.imei}`}>
                               {t('devices.unlink')}
                             </Button>
                           ) : (
-                            <Button variant="secondary" className="min-h-10 px-3 text-sm" onClick={() => setLinking(d)} aria-label={`${t('devices.link')} ${d.imei}`}>
+                            <Button variant="secondary" className="min-h-11 px-3 text-sm" onClick={() => setLinking(d)} aria-label={`${t('devices.link')} ${d.imei}`}>
                               {t('devices.link')}
                             </Button>
                           )}
-                          <Button variant="ghost" className="min-h-10 px-3 text-sm" onClick={() => void act(d, 'archive')} aria-label={`${t('common.archive')} ${d.imei}`}>
+                          <Button variant="ghost" className="min-h-11 px-3 text-sm" onClick={() => void act(d, 'archive')} aria-label={`${t('common.archive')} ${d.imei}`}>
                             {t('common.archive')}
                           </Button>
                         </div>
@@ -129,7 +167,7 @@ export default function DevicesPage() {
           await reload();
         }}
       />
-    </>
+    </div>
   );
 }
 

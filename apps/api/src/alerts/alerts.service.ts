@@ -87,6 +87,22 @@ export class AlertsService {
     });
   }
 
+  /** Puts a handled alert back in the inbox (e.g. handled by mistake). The audit log keeps the history. */
+  reopen(orgId: string, id: string, actor: Actor): Promise<AlertDto> {
+    return this.db.tenant(orgId, async (tx) => {
+      const res = (await tx.execute(sql`
+        update alerts set status = 'open', handled_by = null, handled_at = null, note = null
+        where id = ${id} and status = 'handled' returning id`)) as unknown as { rows: unknown[] };
+      if (!res.rows.length) {
+        const exists = (await tx.execute(sql`select 1 from alerts where id = ${id}`)) as unknown as { rows: unknown[] };
+        if (!exists.rows.length) throw NotFound();
+      } else {
+        await this.audit.record(tx, { orgId, actorUserId: actor.userId, action: 'alert.reopened', targetType: 'alert', targetId: id, ip: actor.ip });
+      }
+      return (await this.query(tx, sql`a.id = ${id}`, 1))[0]!;
+    });
+  }
+
   /** Works in tenant (RLS) and system context; used by the engine to publish new alerts. */
   async query(exec: Db | Tx, where: SQL, limit: number, order: 'asc' | 'desc' = 'desc'): Promise<AlertDto[]> {
     const res = (await exec.execute(sql`

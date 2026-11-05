@@ -29,7 +29,7 @@ export default function ForgotPasswordPage() {
 
   return (
     <>
-      <h1 className="text-3xl font-extrabold tracking-tight">{t('auth.forgotTitle')}</h1>
+      <h1 className="h-display text-[clamp(36px,5vw,48px)]">{t('auth.forgotTitle')}</h1>
       <p className="mt-2 mb-8 text-muted">{t('auth.forgotHelp')}</p>
       {sent ? (
         <Notice tone="success">{t('auth.linkSent')}</Notice>
@@ -42,7 +42,7 @@ export default function ForgotPasswordPage() {
           </Button>
         </form>
       )}
-      <Link href="/login" className="mt-8 text-center font-semibold text-navy underline-offset-4 hover:underline">
+      <Link href="/login" className="mt-8 text-center font-semibold text-ink underline-offset-4 hover:underline">
         {t('auth.backToSignIn')}
       </Link>
     </>

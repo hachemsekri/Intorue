@@ -31,6 +31,7 @@ export type AuditAction =
   | 'alert_rule.updated'
   | 'alert_rule.deleted'
   | 'alert.handled'
+  | 'alert.reopened'
   | 'reservation.created';
 
 export interface AuditEntry {

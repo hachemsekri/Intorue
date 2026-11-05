@@ -53,3 +53,4 @@ export function mapProvider(id: string | undefined, overrides: Partial<MapProvid
   if (id === 'custom') return { ...base, id: 'custom', ...overrides };
   return { ...base, ...overrides };
 }
+export * from './theme';

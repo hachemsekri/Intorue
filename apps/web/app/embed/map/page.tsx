@@ -13,6 +13,7 @@ import type { GeoJSONSource, Marker } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useRef } from 'react';
+import { THEMES, type ThemeName } from '@winou/config';
 import { useBaseMap } from '@/lib/map-style';
 
 interface VehicleMsg {
@@ -44,22 +45,26 @@ export default function EmbedMapPage() {
 }
 
 function EmbedMap() {
-  const locale = useSearchParams().get('lang') ?? 'fr';
+  const params = useSearchParams();
+  const locale = params.get('lang') ?? 'fr';
+  // The app passes its own light/dark setting (it is not this page's saved choice).
+  const theme: ThemeName = params.get('theme') === 'dark' ? 'dark' : 'light';
   const container = useRef<HTMLDivElement>(null);
-  const { map, ml, ready } = useBaseMap(container, locale);
+  const { map, ml, ready } = useBaseMap(container, locale, { theme });
   const markers = useRef(new Map<string, Marker>());
   const extra = useRef<Marker[]>([]);
   const fitted = useRef(false);
 
   useEffect(() => {
     document.documentElement.dir = locale === 'ar' ? 'rtl' : 'ltr';
-  }, [locale]);
+    document.documentElement.dataset.theme = theme;
+  }, [locale, theme]);
 
   useEffect(() => {
     if (!map || !ml || !ready) return;
     map.addSource('route', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-    map.addLayer({ id: 'route-casing', type: 'line', source: 'route', paint: { 'line-color': '#fff', 'line-width': 8 }, layout: { 'line-cap': 'round', 'line-join': 'round' } });
-    map.addLayer({ id: 'route-line', type: 'line', source: 'route', paint: { 'line-color': '#0E7C7B', 'line-width': 4.5 }, layout: { 'line-cap': 'round', 'line-join': 'round' } });
+    map.addLayer({ id: 'route-casing', type: 'line', source: 'route', paint: { 'line-color': THEMES[theme].map.casing, 'line-width': 8 }, layout: { 'line-cap': 'round', 'line-join': 'round' } });
+    map.addLayer({ id: 'route-line', type: 'line', source: 'route', paint: { 'line-color': THEMES[theme].map.route, 'line-width': 4.5 }, layout: { 'line-cap': 'round', 'line-join': 'round' } });
 
     const onMessage = (ev: MessageEvent | { data: string }) => {
       let msg: InMsg;

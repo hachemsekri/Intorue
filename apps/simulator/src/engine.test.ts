@@ -74,3 +74,33 @@ describe('simulator scenarios', () => {
     expect(j.position.attributes).toMatchObject({ simulated: true, batteryLevel: 40 });
   });
 });
+
+describe('road scenarios', () => {
+  it('drive along roads: dense points, a loop that restarts, and the same vehicles', async () => {
+    const { SCENARIOS: ROAD } = await import('./road-scenarios');
+    expect(ROAD.map((s) => s.imei)).toEqual(SCENARIOS.map((s) => s.imei));
+    for (const s of ROAD) {
+      const moving = s.legs.some((l) => l.kmh > 0);
+      if (!moving) continue;
+      expect(s.loop).toBe('restart');
+      // Many more points than the hand-placed waypoints: the path follows the streets.
+      expect(s.legs.length).toBeGreaterThan(SCENARIOS.find((x) => x.imei === s.imei)!.legs.length * 5);
+      // Every stop of the original scenario is kept.
+      const stops = SCENARIOS.find((x) => x.imei === s.imei)!.legs.filter((l) => l.stopS).length;
+      expect(s.legs.filter((l) => l.stopS).length).toBeGreaterThanOrEqual(stops);
+    }
+  });
+
+  it('a vehicle on a road scenario reports fixes close together', async () => {
+    const { SCENARIOS: ROAD } = await import('./road-scenarios');
+    const v = new SimVehicle(ROAD.find((s) => s.label.includes('Dacia'))!, 7);
+    const t0 = new Date('2026-11-04T08:00:00Z').getTime();
+    let prev: { lat: number; lon: number } | null = null;
+    for (let i = 0; i < 600; i++) {
+      const f = v.step(5, new Date(t0 + i * 5000));
+      if (!f) continue;
+      if (prev) expect(distanceM([prev.lat, prev.lon], [f.lat, f.lon])).toBeLessThan(150);
+      prev = f;
+    }
+  });
+});

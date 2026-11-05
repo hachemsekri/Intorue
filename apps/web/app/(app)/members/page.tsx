@@ -161,7 +161,7 @@ export default function MembersPage() {
                       </div>
                       <Button
                         variant="ghost"
-                        className="min-h-10 px-3 text-sm"
+                        className="min-h-11 px-3 text-sm"
                         aria-label={`${t('members.revoke')} ${i.email}`}
                         onClick={() => void run(() => api(`/orgs/${org.orgId}/invitations/${i.id}`, { method: 'DELETE' }), t('common.saved'))}
                       >

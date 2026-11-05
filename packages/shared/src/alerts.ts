@@ -154,6 +154,8 @@ export interface TripDto {
   avgSpeedKmh: number;
   /** Simplified route, [lon, lat]. */
   path: [number, number][];
+  /** Speed over the trip: [seconds since start, km/h] (peaks kept), for charts. */
+  speeds: [number, number][];
 }
 
 export interface StopDto {

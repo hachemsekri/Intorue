@@ -5,7 +5,7 @@ import type { Database, Tx } from '../db/client';
 import { CLOCK, DB, type Clock } from '../common/tokens';
 import { NotFound } from '../common/errors';
 import { AlertsService } from '../alerts/alerts.service';
-import { detectTrips, simplify, type Fix } from './detect';
+import { detectTrips, simplify, speedProfile, type Fix } from './detect';
 
 /** Look this far before the requested window so a trip already under way is complete. */
 const LOOKBACK_MS = 3 * 3600_000;
@@ -77,6 +77,7 @@ export class TripsService {
           maxSpeedKmh: t.maxSpeedKmh,
           avgSpeedKmh: t.avgSpeedKmh,
           path: simplify(t.fixes),
+          speeds: speedProfile(t.fixes),
         })),
         stops: stops.map((s) => ({
           startedAt: s.startedAt.toISOString(),

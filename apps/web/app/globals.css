@@ -1,34 +1,50 @@
 @import 'tailwindcss';
 
-/* Design tokens, from packages/config brand colours and the reference designs. */
-@theme {
-  --color-navy: #0e2a47;
-  --color-navy-deep: #0b2440;
-  --color-navy-soft: #1b3a5c;
-  --color-teal: #14b8a6;
-  --color-teal-dark: #0e7c7b;
-  --color-canvas: #f3f6f9;
-  --color-line: #dde3ea;
-  --color-ink: #0e2a47;
-  --color-muted: #5b6b7f;
-  --color-moving: #0e8a87;
-  --color-stopped: #3f6ea8;
-  --color-offline: #6b7785;
-  --color-attention: #b34a07;
-  --color-attention-bg: #fdefe3;
-  --color-danger: #b42318;
-  --color-danger-bg: #fdecea;
-  --color-ok-bg: #e3f5f3;
-  --color-info-bg: #e8eef7;
+/*
+ * Design tokens. The colour values live in packages/config (THEMES) and are emitted as CSS
+ * variables by the root layout (light by default, dark under [data-theme="dark"]); Tailwind
+ * utilities below point at those variables, so every page switches theme without a reload.
+ */
+@theme inline {
+  --color-canvas: var(--bg);
+  --color-surface: var(--surf);
+  --color-surface-2: var(--surf2);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-muted: var(--sub);
+  --color-navtxt: var(--navtxt);
+  --color-acc: var(--acc);
+  --color-on-acc: var(--onacc);
+  --color-acc-text: var(--acctxt);
+  --color-zebra: var(--zebra);
+  --color-moving: var(--moving);
+  --color-stopped: var(--stopped);
+  --color-offline: var(--offline);
+  --color-ok-bg: var(--okbg);
+  --color-info-bg: var(--infobg);
+  --color-attention: var(--warn);
+  --color-attention-bg: var(--warnbg);
+  --color-danger: var(--danger);
+  --color-danger-bg: var(--dangerbg);
+  --color-plaque: var(--plaque);
 
-  --font-sans: var(--font-latin), var(--font-arabic), ui-sans-serif, system-ui, sans-serif;
-  --radius-card: 14px;
+  --font-sans: var(--font-archivo), var(--font-kufi), 'Segoe UI', ui-sans-serif, system-ui, sans-serif;
+  --font-arabic: var(--font-kufi), 'Segoe UI', Tahoma, sans-serif;
+  --radius-card: 20px;
+}
+
+/* Large display titles and key numbers (Archivo, slightly wide). */
+@utility h-display {
+  font-stretch: 112%;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.04;
 }
 
 @layer base {
   html {
-    color: var(--color-ink);
-    background: var(--color-canvas);
+    color: var(--ink);
+    background: var(--bg);
   }
   body {
     font-family: var(--font-sans);
@@ -36,12 +52,15 @@
   }
   /* Visible keyboard focus everywhere. */
   :focus-visible {
-    outline: 3px solid var(--color-teal);
+    outline: 3px solid var(--acc);
     outline-offset: 2px;
-    border-radius: 6px;
   }
   dialog::backdrop {
-    background: rgb(11 36 64 / 0.45);
+    background: rgb(4 10 22 / 0.55);
+  }
+  ::placeholder {
+    color: var(--sub);
+    opacity: 0.8;
   }
   @media (prefers-reduced-motion: reduce) {
     *,
@@ -53,10 +72,38 @@
   }
 }
 
+/* Soft entrance for switched views and panels. */
+@media (prefers-reduced-motion: no-preference) {
+  .fade-in {
+    animation: fade-in 0.3s cubic-bezier(0.16, 0.84, 0.24, 1);
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+  }
+}
+
 /* Latin digits and plates stay left-to-right inside Arabic text. */
 .ltr-isolate {
   direction: ltr;
   unicode-bidi: isolate;
+}
+
+/* Tunisian enamel street plaque: Arabic above, French below. */
+.plaque {
+  background: var(--plaque);
+  color: #fff;
+  border-radius: 7px;
+  box-shadow: inset 0 0 0 2px #fff;
+  padding: 7px 14px 9px;
+  text-align: center;
+}
+.plaque b {
+  display: block;
+  font: 700 15px/1.4 var(--font-kufi), 'Segoe UI', Tahoma, sans-serif;
+  direction: rtl;
 }
 
 /* Home page motion. The hidden state is only set by script (components/home/reveal.tsx). */
@@ -70,20 +117,68 @@
     opacity: 0;
     transform: translateY(24px);
   }
-  .home-drift {
-    animation: home-drift 24s ease-in-out infinite alternate;
-  }
-  @keyframes home-drift {
-    from { transform: scale(1); }
-    to { transform: scale(1.08); }
-  }
 }
 
-/* Arabic is a joined script: negative letter-spacing breaks it. */
+/* Arabic is a joined script: negative letter-spacing breaks it, and Kufi needs more line height. */
 :lang(ar) h1,
 :lang(ar) h2,
 :lang(ar) h3,
 :lang(ar) p,
-:lang(ar) span {
+:lang(ar) span,
+:lang(ar) strong,
+:lang(ar) .h-display {
   letter-spacing: normal !important;
+}
+:lang(ar) .h-display {
+  line-height: 1.3;
+}
+
+/* Live map markers: vehicle-type icon, status ring (dashed when offline), turquoise when selected. */
+.intorue-marker {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: var(--surf);
+  color: var(--ink);
+  box-shadow:
+    0 0 0 3px var(--ring, var(--offline)),
+    0 4px 12px rgb(0 0 0 / 0.3);
+  cursor: pointer;
+}
+.intorue-marker[data-status='offline'],
+.intorue-marker[data-status='never'],
+.intorue-marker[data-status='no_device'] {
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.3);
+  outline: 3px dashed var(--ring, var(--offline));
+  outline-offset: 0;
+}
+.intorue-marker[aria-pressed='true'] {
+  background: var(--acc);
+  color: var(--onacc);
+  width: 44px;
+  height: 44px;
+}
+.intorue-marker:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
+}
+
+/* MapLibre controls follow the theme. */
+.maplibregl-ctrl-attrib,
+.maplibregl-ctrl-group {
+  background: var(--surf) !important;
+  color: var(--ink);
+}
+.maplibregl-ctrl-attrib a {
+  color: var(--ink) !important;
+}
+.maplibregl-ctrl-group button {
+  width: 44px !important;
+  height: 44px !important;
+}
+:root[data-theme='dark'] .maplibregl-ctrl-group button .maplibregl-ctrl-icon,
+:root[data-theme='dark'] .maplibregl-ctrl-attrib-button {
+  filter: invert(1);
 }

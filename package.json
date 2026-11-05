@@ -22,6 +22,7 @@
     "db:check": "corepack pnpm --filter @winou/api run db:check",
     "basemap": "node scripts/fetch-basemap.mjs",
     "routes:home": "node scripts/build-home-routes.mjs",
+    "routes:sim": "node scripts/build-sim-routes.mjs",
     "preview": "corepack pnpm build && node scripts/dev.mjs --prod",
     "mobile": "corepack pnpm --filter @winou/mobile run start",
     "mobile:web": "corepack pnpm --filter @winou/mobile run web"

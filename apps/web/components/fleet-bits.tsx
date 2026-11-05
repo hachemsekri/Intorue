@@ -34,7 +34,7 @@ export function LastSeen({ at }: { at: string | null }) {
 
 export function Kpi({ value, label, tone = 'default' }: { value: number; label: string; tone?: 'default' | 'attention' }) {
   return (
-    <div className={`rounded-[var(--radius-card)] px-5 py-4 ${tone === 'attention' ? 'bg-attention-bg text-attention' : 'bg-white'}`}>
+    <div className={`rounded-[20px] px-5 py-4 ${tone === 'attention' ? 'bg-attention-bg text-attention' : 'bg-surface'}`}>
       <p className="text-3xl font-extrabold tabular-nums">{value}</p>
       <p className={`text-sm ${tone === 'attention' ? '' : 'text-muted'}`}>{label}</p>
     </div>

@@ -34,7 +34,7 @@ function ResetForm() {
 
   return (
     <>
-      <h1 className="mb-8 text-3xl font-extrabold tracking-tight">{t('auth.resetTitle')}</h1>
+      <h1 className="h-display mb-7 text-[clamp(36px,5vw,48px)]">{t('auth.resetTitle')}</h1>
       {done ? (
         <Notice tone="success">{t('auth.resetDone')}</Notice>
       ) : (
@@ -48,7 +48,7 @@ function ResetForm() {
           </Button>
         </form>
       )}
-      <Link href="/login" className="mt-8 text-center font-semibold text-navy underline-offset-4 hover:underline">
+      <Link href="/login" className="mt-8 text-center font-semibold text-ink underline-offset-4 hover:underline">
         {t('auth.backToSignIn')}
       </Link>
     </>

@@ -3,12 +3,14 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Badge, Button, C, Notice, s } from '@/components/ui';
+import {Badge, Button, Notice, statusColor, useStyles, useTheme} from '@/components/ui';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { useApi, useSession } from '@/lib/session';
 
 export default function Alerts() {
+  const { T } = useTheme();
+  const s = useStyles();
   const { t, locale, formatRelative, formatDateTime } = useI18n();
   const { org, can } = useSession();
   const [status, setStatus] = useState<'open' | 'handled'>('open');
@@ -57,9 +59,9 @@ export default function Alerts() {
                   accessibilityRole="tab"
                   accessibilityState={{ selected: status === k }}
                   onPress={() => setStatus(k)}
-                  style={{ paddingHorizontal: 16, minHeight: 40, justifyContent: 'center', borderRadius: 999, borderWidth: 1, borderColor: status === k ? C.navy : C.border, backgroundColor: status === k ? C.navy : '#fff' }}
+                  style={{ paddingHorizontal: 16, minHeight: 40, justifyContent: 'center', borderRadius: 999, borderWidth: 1, borderColor: status === k ? T.ink : T.line, backgroundColor: status === k ? T.ink : '#fff' }}
                 >
-                  <Text style={{ color: status === k ? '#fff' : C.navy, fontWeight: '600' }}>{t(k === 'open' ? 'alerts.toHandle' : 'alerts.handled')}</Text>
+                  <Text style={{ color: status === k ? '#fff' : T.ink, fontWeight: '600' }}>{t(k === 'open' ? 'alerts.toHandle' : 'alerts.handled')}</Text>
                 </Pressable>
               ))}
             </View>
@@ -70,10 +72,10 @@ export default function Alerts() {
         renderItem={({ item: a }) => (
           <View style={[s.card, { gap: 8 }]}>
             <View style={[s.row, { justifyContent: 'space-between', gap: 8 }]}>
-              <Badge text={t(`alerts.severities.${a.severity}`)} color={a.severity === 'urgent' ? '#B34A07' : C.navy} bg={a.severity === 'urgent' ? '#FDEFE3' : '#E8EEF7'} />
+              <Badge text={t(`alerts.severities.${a.severity}`)} color={a.severity === 'urgent' ? T.warn : T.ink} bg={a.severity === 'urgent' ? T.warnbg : T.infobg} />
               <Text style={s.muted}>{formatRelative(a.occurredAt)}</Text>
             </View>
-            <Text style={{ fontSize: 17, fontWeight: '700', color: C.navy }}>
+            <Text style={{ fontSize: 17, fontWeight: '700', color: T.ink }}>
               {t(`alerts.types.${a.type}`)} · {a.vehicle.name}
             </Text>
             <Text style={s.muted}>{text(a)}</Text>

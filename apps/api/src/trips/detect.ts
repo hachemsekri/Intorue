@@ -192,6 +192,26 @@ export function detectTrips(
   return { trips, stops };
 }
 
+/**
+ * Speed over the trip for charts: [seconds since start, km/h], at most `maxPoints` points.
+ * Each bucket keeps its highest reading, so short peaks (speeding) stay visible.
+ */
+export function speedProfile(fixes: Fix[], maxPoints = 240): [number, number][] {
+  if (!fixes.length) return [];
+  const t0 = fixes[0]!.at.getTime();
+  const pts = fixes.map((f) => [Math.round((f.at.getTime() - t0) / 1000), Math.round(f.speedKmh)] as [number, number]);
+  if (pts.length <= maxPoints) return pts;
+  const size = Math.ceil(pts.length / maxPoints);
+  const out: [number, number][] = [];
+  for (let i = 0; i < pts.length; i += size) {
+    const bucket = pts.slice(i, i + size);
+    out.push(bucket.reduce((m, p) => (p[1] > m[1] ? p : m)));
+  }
+  const last = pts[pts.length - 1]!;
+  if (out[out.length - 1]![0] !== last[0]) out.push(last);
+  return out;
+}
+
 /** Douglas–Peucker simplification for drawing routes ([lon, lat] output). */
 export function simplify(fixes: Fix[], toleranceM = 8, maxPoints = 2000): [number, number][] {
   if (fixes.length <= 2) return fixes.map((f) => [f.lon, f.lat]);

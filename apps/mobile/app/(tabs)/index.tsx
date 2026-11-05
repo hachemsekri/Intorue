@@ -3,10 +3,10 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MapWeb, type MapHandle } from '@/components/MapWeb';
-import { Button, C, Wordmark, s } from '@/components/ui';
+import {Button, Wordmark, statusColor, useStyles, useTheme} from '@/components/ui';
 import { PlateText, StatusBadge } from '@/components/VehicleBits';
 import { useI18n } from '@/lib/i18n';
-import { STATUS_COLOR, useLiveVehicles, type LiveVehicle } from '@/lib/live';
+import { useLiveVehicles, type LiveVehicle } from '@/lib/live';
 import { useSession } from '@/lib/session';
 
 const shortName = (v: LiveVehicle) =>
@@ -14,6 +14,8 @@ const shortName = (v: LiveVehicle) =>
 
 /** Mobile design: full-screen map, brand bar with alert count, bottom sheet for the selected vehicle. */
 export default function MapScreen() {
+  const { T } = useTheme();
+  const s = useStyles();
   const { t, locale, formatRelative, formatTime } = useI18n();
   const { org } = useSession();
   const { vehicles } = useLiveVehicles(org?.orgId);
@@ -30,7 +32,7 @@ export default function MapScreen() {
     () =>
       vehicles
         .filter((v) => v.position)
-        .map((v) => ({ id: v.vehicleId, label: shortName(v), color: STATUS_COLOR[v.status], lon: v.position!.lon, lat: v.position!.lat, selected: v.vehicleId === selectedId })),
+        .map((v) => ({ id: v.vehicleId, label: shortName(v), color: statusColor(T)[v.status], lon: v.position!.lon, lat: v.position!.lat, selected: v.vehicleId === selectedId })),
     [vehicles, selectedId],
   );
   useEffect(() => {
@@ -58,22 +60,22 @@ export default function MapScreen() {
       {selected && (
         <View
           accessibilityViewIsModal={false}
-          style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, gap: 12, elevation: 12, shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 12 }}
+          style={{ position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: T.surf, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, gap: 12, elevation: 12, shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 12 }}
         >
-          <View style={{ alignSelf: 'center', width: 44, height: 5, borderRadius: 3, backgroundColor: C.border }} />
+          <View style={{ alignSelf: 'center', width: 44, height: 5, borderRadius: 3, backgroundColor: T.line }} />
           <View style={[s.row, { justifyContent: 'space-between', gap: 8 }]}>
             <View style={{ flexShrink: 1 }}>
-              <Text style={{ fontSize: 26, fontWeight: '800', color: C.navy }} accessibilityRole="header">
+              <Text style={{ fontSize: 26, fontWeight: '800', color: T.ink }} accessibilityRole="header">
                 {selected.name}
               </Text>
               <PlateText plate={selected.plate} format={selected.plateFormat} style={[s.muted, { fontSize: 17 }]} />
             </View>
             <Pressable accessibilityRole="button" accessibilityLabel={t('map.closeDetails')} onPress={() => setSelectedId(null)} hitSlop={12}>
-              <Text style={{ fontSize: 22, color: C.textMuted }}>✕</Text>
+              <Text style={{ fontSize: 22, color: T.sub }}>✕</Text>
             </Pressable>
           </View>
           <StatusBadge status={selected.status} extra={since ? t('map.since', { time: formatTime(since) }) : undefined} />
-          <View style={{ height: 1, backgroundColor: C.border }} />
+          <View style={{ height: 1, backgroundColor: T.line }} />
           <View style={[s.row, { flexWrap: 'wrap', rowGap: 12 }]}>
             <Info label={t('map.speed')} value={p ? `${Math.round(p.speedKmh)} ${t('map.kmh')}` : '—'} />
             <Info label={t('map.lastUpdate')} value={selected.device?.lastSeenAt ? formatRelative(selected.device.lastSeenAt) : '—'} />
@@ -90,10 +92,12 @@ export default function MapScreen() {
 }
 
 function Info({ label, value }: { label: string; value: string }) {
+  const { T } = useTheme();
+  const s = useStyles();
   return (
     <View style={{ width: '50%' }}>
       <Text style={s.muted}>{label}</Text>
-      <Text style={{ fontSize: 18, fontWeight: '700', color: C.navy }}>{value}</Text>
+      <Text style={{ fontSize: 18, fontWeight: '700', color: T.ink }}>{value}</Text>
     </View>
   );
 }

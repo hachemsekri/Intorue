@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
-import { Archivo, Noto_Kufi_Arabic } from 'next/font/google';
 import Link from 'next/link';
 import { brand } from '@winou/config';
 import { messages, type SupportedLocale } from '@winou/i18n';
@@ -13,9 +12,6 @@ import { Reveal } from '@/components/home/reveal';
 import { LOCALE_COOKIE } from '@/lib/locale';
 import { MAP_CREDITS } from '@/lib/map-credits';
 import './home.css';
-
-const archivo = Archivo({ subsets: ['latin'], axes: ['wdth'], variable: '--font-archivo', display: 'swap' });
-const kufi = Noto_Kufi_Arabic({ subsets: ['arabic'], variable: '--font-kufi', display: 'swap' });
 
 async function current(): Promise<{ locale: SupportedLocale; signedIn: boolean }> {
   const c = await cookies();
@@ -43,7 +39,7 @@ export default async function Home() {
   const types = m.alerts.types;
 
   return (
-    <div className={`ih ${archivo.variable} ${kufi.variable}`}>
+    <div className="ih">
       <Reveal />
       <a className="skip" href="#main">
         {m.common.skipToContent}
