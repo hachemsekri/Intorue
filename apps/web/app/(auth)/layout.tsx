@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Wordmark } from '@/components/brand';
 import { LocaleSwitcher } from '@/components/locale-switcher';
 import { Tagline } from '@/components/tagline';
+import credits from '@/public/home/credits.json';
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -15,6 +16,12 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         </Link>
         <div className="relative p-10">
           <Tagline />
+          <p className="mt-6 text-xs text-white/70">
+            <a href={credits.avenue.page} className="underline-offset-2 hover:underline" rel="noreferrer" target="_blank">
+              {credits.avenue.artist}
+            </a>
+            , {credits.avenue.licence}, Wikimedia Commons
+          </p>
         </div>
       </aside>
       <main id="main" className="flex flex-col px-4 py-6 sm:px-8">

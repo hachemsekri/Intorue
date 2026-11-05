@@ -217,3 +217,15 @@ export const alerts = pgTable('alerts', {
   note: text('note'),
   createdAt: ts('created_at').notNull().defaultNow(),
 });
+
+/** Home page call-back requests (system connection only; no org, no RLS grant). */
+export const reservations = pgTable('reservations', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull(),
+  phone: text('phone').notNull(),
+  vehicleType: text('vehicle_type').notNull(),
+  city: text('city'),
+  locale: text('locale').notNull().default('fr'),
+  status: text('status').notNull().default('new'),
+  createdAt: ts('created_at').notNull().defaultNow(),
+});

@@ -30,7 +30,8 @@ export type AuditAction =
   | 'alert_rule.created'
   | 'alert_rule.updated'
   | 'alert_rule.deleted'
-  | 'alert.handled';
+  | 'alert.handled'
+  | 'reservation.created';
 
 export interface AuditEntry {
   orgId: string | null;

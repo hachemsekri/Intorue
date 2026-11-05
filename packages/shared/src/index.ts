@@ -6,3 +6,4 @@ export * from './schemas';
 export * from './api-types';
 export * from './live';
 export * from './alerts';
+export * from './phone';

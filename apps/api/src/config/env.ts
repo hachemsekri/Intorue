@@ -33,6 +33,9 @@ const EnvSchema = z.object({
   PUSH_PROVIDER: z.enum(['none', 'console', 'expo']).default('console'),
   EXPO_ACCESS_TOKEN: z.preprocess((v) => (v === '' ? undefined : v), z.string().optional()),
   LOGIN_MAX_FAILURES: z.coerce.number().int().positive().default(5),
+  /** Home page reservations: per-IP limit per hour, and the minimum time a person takes to fill the form. */
+  RESERVATIONS_PER_HOUR: z.coerce.number().int().positive().default(5),
+  RESERVATION_MIN_FILL_MS: z.coerce.number().int().min(0).default(1500),
 });
 
 export type Env = z.infer<typeof EnvSchema> & { cookieSecure: boolean };

@@ -96,3 +96,23 @@ describe('live status', () => {
     expect(liveStatus({ device: device('2026-11-04T11:40:00Z'), position: position(42) }, now)).toBe('offline');
   });
 });
+
+describe('phone', () => {
+  it('normalizes Tunisian numbers', async () => {
+    const { normalizePhone } = await import('./phone');
+    expect(normalizePhone('22 123 456')).toBe('+21622123456');
+    expect(normalizePhone('+216 98.765.432')).toBe('+21698765432');
+    expect(normalizePhone('00216 50 123 456')).toBe('+21650123456');
+    expect(normalizePhone('21629123456')).toBe('+21629123456');
+  });
+  it('accepts other international numbers and rejects junk', async () => {
+    const { normalizePhone } = await import('./phone');
+    expect(normalizePhone('+33 6 12 34 56 78')).toBe('+33612345678');
+    expect(normalizePhone('12345678')).toBeNull();
+    expect(normalizePhone('2212345')).toBeNull();
+    expect(normalizePhone('+216 12 345 678')).toBeNull();
+    expect(normalizePhone('call me')).toBeNull();
+    expect(normalizePhone('22+123456')).toBeNull();
+    expect(normalizePhone('')).toBeNull();
+  });
+});

@@ -39,6 +39,7 @@ import { GeofencesService } from './geofences/geofences.service';
 import { TripsService } from './trips/trips.service';
 import { PushPreferencesController, PushTokensController } from './push/push.controller';
 import { ConsolePushSender, ExpoPushSender, PUSH_SENDER, PushService, type PushSender } from './push/push.service';
+import { ReservationsController, ReservationsService } from './reservations/reservations.controller';
 
 @Controller('health')
 class HealthController {
@@ -80,6 +81,7 @@ class AppModule {
         TripsController,
         PushTokensController,
         PushPreferencesController,
+        ReservationsController,
       ],
       providers: [
         { provide: ENV, useValue: deps.env },
@@ -89,6 +91,7 @@ class AppModule {
         { provide: EVENT_BUS, useValue: deps.bus },
         { provide: PUSH_SENDER, useValue: deps.push },
         PushService,
+        ReservationsService,
         LiveService,
         LiveTickets,
         LiveSocketHandler,
