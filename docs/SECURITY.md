@@ -29,6 +29,12 @@ Production note: the API must connect as a **non-superuser** role that owns the 
 - A rule can only reference zones and vehicles of its own organization (checked inside the RLS transaction, so other organizations' IDs are simply not found).
 - Alerts are created by the engine in system context and are only readable and markable as handled by the application role; they cannot be deleted. Rule and zone changes and "handled" actions are in the audit log.
 
+## Mobile app and push
+- Tokens are stored in the phone's secure storage; the web preview keeps them in memory only.
+- Push tokens are linked to the user who registered them last; a removed member, a disabled user or a signed-out phone receives nothing (membership is checked when each alert is sent). Tokens reported as dead by the push service are deleted.
+- Notification text holds the alert type, vehicle name and plate: no coordinates, no addresses (lock screens are visible to others).
+- The mobile map page (`/embed/map`) has no session and loads no data; it may be framed by the app's preview.
+
 ## Input and transport
 - Every body and query is validated with strict Zod schemas (unknown fields are rejected). IDs must be UUIDs, otherwise 404.
 - Body size is limited to 256 KB. Helmet headers are on the API; the web app sets frame, sniffing, referrer and permissions policies.

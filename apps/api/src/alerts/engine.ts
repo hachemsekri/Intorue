@@ -6,6 +6,7 @@ import type { Database, Tx } from '../db/client';
 import { CLOCK, DB, type Clock } from '../common/tokens';
 import { EVENT_BUS, type EventBus } from '../live/event-bus';
 import { AlertsService } from './alerts.service';
+import { PushService } from '../push/push.service';
 import * as ev from './evaluate';
 
 interface RuleRow {
@@ -42,6 +43,7 @@ export class AlertEngine implements OnModuleInit, OnModuleDestroy {
     @Inject(EVENT_BUS) private readonly bus: EventBus,
     @Inject(ENV) private readonly env: Env,
     private readonly alerts: AlertsService,
+    private readonly push: PushService,
   ) {}
 
   onModuleInit() {
@@ -179,7 +181,9 @@ export class AlertEngine implements OnModuleInit, OnModuleDestroy {
     });
     for (const id of newIds) {
       const [dto] = await this.alerts.query(this.db.system, sql`a.id = ${id}`, 1);
-      if (dto) this.bus.publish({ orgId, kind: 'alert', alert: dto });
+      if (!dto) continue;
+      this.bus.publish({ orgId, kind: 'alert', alert: dto });
+      await this.push.notifyAlert(orgId, dto).catch((e) => this.logger.warn(`Push failed: ${(e as Error).message}`));
     }
     return newIds.length;
   }

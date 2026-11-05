@@ -37,6 +37,8 @@ import { AlertsService } from './alerts/alerts.service';
 import { AlertEngine } from './alerts/engine';
 import { GeofencesService } from './geofences/geofences.service';
 import { TripsService } from './trips/trips.service';
+import { PushPreferencesController, PushTokensController } from './push/push.controller';
+import { ConsolePushSender, ExpoPushSender, PUSH_SENDER, PushService, type PushSender } from './push/push.service';
 
 @Controller('health')
 class HealthController {
@@ -55,6 +57,7 @@ export interface AppDeps {
   mailer: Mailer;
   clock: Clock;
   bus: EventBus;
+  push: PushSender;
 }
 
 @Module({})
@@ -75,6 +78,8 @@ class AppModule {
         AlertRulesController,
         ZonesController,
         TripsController,
+        PushTokensController,
+        PushPreferencesController,
       ],
       providers: [
         { provide: ENV, useValue: deps.env },
@@ -82,6 +87,8 @@ class AppModule {
         { provide: MAILER, useValue: deps.mailer },
         { provide: CLOCK, useValue: deps.clock },
         { provide: EVENT_BUS, useValue: deps.bus },
+        { provide: PUSH_SENDER, useValue: deps.push },
+        PushService,
         LiveService,
         LiveTickets,
         LiveSocketHandler,
@@ -116,7 +123,14 @@ export async function createApp(
   const db = partial.db ?? (await createDatabase(env.DATABASE_URL, { poolMax: env.DATABASE_POOL_MAX }));
   await migrate(db);
   const mailer = partial.mailer ?? (env.SMTP_URL ? new SmtpMailer(env.SMTP_URL, env.MAIL_FROM) : new ConsoleMailer());
-  const deps: AppDeps = { env, db, mailer, clock: partial.clock ?? systemClock, bus: partial.bus ?? new InMemoryEventBus() };
+  const push =
+    partial.push ??
+    (env.PUSH_PROVIDER === 'expo'
+      ? new ExpoPushSender(env.EXPO_ACCESS_TOKEN)
+      : env.PUSH_PROVIDER === 'console'
+        ? new ConsolePushSender()
+        : { send: async () => ({ invalidTokens: [] }) });
+  const deps: AppDeps = { env, db, mailer, clock: partial.clock ?? systemClock, bus: partial.bus ?? new InMemoryEventBus(), push };
 
   const adapter = new FastifyAdapter({ trustProxy: env.TRUST_PROXY, bodyLimit: 256 * 1024 });
   const app = await NestFactory.create<NestFastifyApplication>(AppModule.register(deps), adapter, {

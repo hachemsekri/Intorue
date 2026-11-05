@@ -5,6 +5,7 @@ import { createApp, type AppDeps } from '../src/app';
 import { loadEnv } from '../src/config/env';
 import { createDatabase } from '../src/db/client';
 import { MemoryMailer } from '../src/mail/mailer';
+import { MemoryPushSender } from '../src/push/push.service';
 
 export const PASSWORD = 'CorrectHorse42';
 
@@ -33,6 +34,7 @@ export interface TestCtx {
   deps: AppDeps;
   mailer: MemoryMailer;
   clock: FakeClock;
+  push: MemoryPushSender;
   close(): Promise<void>;
 }
 
@@ -52,8 +54,9 @@ export async function makeApp(envOverrides: Record<string, string> = {}): Promis
   const clock = new FakeClock();
   // Real clock for JWT/cookie handling would make expiry tests slow; the fake clock drives everything.
   const db = await createDatabase(env.DATABASE_URL);
-  const { app, deps } = await createApp({ env, db, mailer, clock });
-  return { app, deps, mailer, clock, close: () => app.close().then(() => db.close()) };
+  const push = new MemoryPushSender();
+  const { app, deps } = await createApp({ env, db, mailer, clock, push });
+  return { app, deps, mailer, clock, push, close: () => app.close().then(() => db.close()) };
 }
 
 export interface Client {

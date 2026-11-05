@@ -13,6 +13,9 @@ The app contains **placeholders only**. No final legal text has been written.
 5. **Requests from authorities** for location data: procedure and who may approve.
 6. **Data subject rights**: access, correction, deletion; response delays.
 
+## Push notifications
+14. With `PUSH_PROVIDER=expo`, alert notifications (type, vehicle name, plate) pass through Expo's servers and then Apple/Google. Check whether this counts as a transfer of personal data abroad and what the privacy notice must say.
+
 ## Texts to write
 7. Terms of use (placeholder version `placeholder-0`, recorded in the `consents` table at sign-up).
 8. Privacy policy, including the commitment "we do not sell or share location data".

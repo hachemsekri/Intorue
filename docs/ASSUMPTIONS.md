@@ -58,3 +58,11 @@ Decisions taken so work could continue. Each one can be changed. Ask if one is w
 36. Alerts are evaluated on the vehicle's newest position only; buffered old fixes never trigger alerts.
 37. Severity has two levels, matching the designs: **Urgent** and **À vérifier**.
 38. The alerts badge in the menu refreshes every 30 seconds; the inbox every 20 seconds. Real-time push comes with the mobile app (Milestone 4).
+
+## Milestone 4
+39. **Mobile maps use the web app's map in a WebView** (`/embed/map`): same self-hosted tiles, Arabic labels and attribution, and it works in Expo Go. No Google Maps or Apple Maps SDK (both would need keys and terms). A native MapLibre module can replace it later for smoother panning.
+40. The embed page holds no session and fetches no customer data: the app sends it only what to draw.
+41. The mobile app uses Bearer tokens kept in the phone's secure storage (Keychain / Keystore). Sign-out revokes the refresh token and unregisters the phone's push token.
+42. The app starts in Arabic if the phone is set to Arabic, otherwise in French; English is chosen in Compte. Switching to or from Arabic needs an app restart for the right-to-left layout (React Native limitation).
+43. **Push:** every member who may read alerts receives them for their organizations, unless they turn them off or choose "urgent only" (per organization). Notifications carry the alert type, vehicle name and plate, never coordinates. Delivery is off (logged only) until an Expo project is approved.
+44. Bottom tabs show text labels only (as in the design), no icon font.

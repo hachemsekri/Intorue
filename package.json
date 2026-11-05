@@ -21,7 +21,9 @@
     "db:server": "corepack pnpm --filter @winou/api run db:server",
     "db:check": "corepack pnpm --filter @winou/api run db:check",
     "basemap": "node scripts/fetch-basemap.mjs",
-    "preview": "corepack pnpm build && node scripts/dev.mjs --prod"
+    "preview": "corepack pnpm build && node scripts/dev.mjs --prod",
+    "mobile": "corepack pnpm --filter @winou/mobile run start",
+    "mobile:web": "corepack pnpm --filter @winou/mobile run web"
   },
   "devDependencies": {
     "pmtiles": "4.5.0",

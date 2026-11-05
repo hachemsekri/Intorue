@@ -18,7 +18,15 @@ const config: NextConfig = {
   async headers() {
     return [
       {
-        source: '/:path*',
+        // The mobile map (/embed/map) holds no session or data and may be framed by the app's web preview.
+        source: '/embed/:path*',
+        headers: [
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'Referrer-Policy', value: 'no-referrer' },
+        ],
+      },
+      {
+        source: '/((?!embed/).*)',
         headers: [
           { key: 'X-Frame-Options', value: 'DENY' },
           { key: 'X-Content-Type-Options', value: 'nosniff' },

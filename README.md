@@ -3,8 +3,9 @@
 Track cars, motorcycles and scooters in Tunisia. Web app (French, Arabic RTL, English), mobile app (Milestone 4), API.
 The brand name lives in one place: `packages/config/src/index.ts`.
 
-> **Status: Milestone 3** (accounts, organizations, roles, vehicles, GPS devices, audit log, device simulator,
-> live map, trip history, zones, alert rules and alert inbox). Mobile app and push notifications come in Milestone 4.
+> **Status: Milestone 4** (accounts, organizations, roles, vehicles, GPS devices, audit log, device simulator,
+> live map, trip history, zones, alert rules and alert inbox, mobile app, push notifications server side).
+> Karia integration and the real-device test are Milestone 5.
 > See [docs/PLAN.md](docs/PLAN.md).
 
 ## Repository
@@ -13,6 +14,7 @@ The brand name lives in one place: `packages/config/src/index.ts`.
 apps/api        NestJS (Fastify) REST API: auth, organizations, vehicles, devices, audit log
 apps/web        Next.js web app (proxies /api to the API so auth cookies stay first-party)
 apps/simulator  Simulated GPS devices around Tunis (SAMPLE DATA), sent through the device adapter
+apps/mobile     Expo (React Native) app for Android and iPhone: map, fleet, trips, alerts, account
 packages/shared Types, Zod validation schemas, roles/permissions, Tunisian plates, IMEI
 packages/i18n   fr (default), ar (RTL), en messages
 packages/config Brand name/colours, map provider registry
@@ -81,6 +83,36 @@ Without it, the map shows vehicles on a plain background.
 corepack pnpm basemap
 ```
 
+### Mobile app
+
+The app has four tabs (Carte, Flotte, Alertes, Compte), the vehicle trip screen, and push registration.
+Its map is the web app's self-hosted map (`/embed/map`) shown in a WebView: same tiles, no Google Maps key.
+
+**On your phone (Android or iPhone), with the free Expo Go app:**
+
+1. Phone and PC on the same Wi-Fi. Find the PC's address (`ipconfig`, "IPv4 Address", e.g. `192.168.1.20`).
+2. Create `apps/mobile/.env`:
+   ```
+   EXPO_PUBLIC_API_URL=http://192.168.1.20:4000
+   EXPO_PUBLIC_WEB_URL=http://192.168.1.20:3000
+   ```
+3. Keep `corepack pnpm dev` (or `preview`) running, then:
+   ```bash
+   corepack pnpm mobile
+   ```
+4. Scan the QR code with Expo Go (Android) or the Camera app (iPhone). If Windows asks, allow Node.js on private networks.
+
+**In the browser (quick look, no phone):** `corepack pnpm mobile:web`, then open http://localhost:8081
+with the browser in phone size. In this preview, sign-in is kept in memory only (a reload signs you out) and push is unavailable.
+
+**Push notifications** are fully built on the server (who receives what, language, preferences, removed members, dead tokens)
+and the app registers itself, but real delivery needs, **with your approval first**:
+- an Expo account and project (free), and a development build of the app (`eas build --profile development`);
+- for Android, a Firebase project (free) for FCM; for iPhone, an Apple Developer account ($99/year);
+- `PUSH_PROVIDER=expo` in `.env`.
+
+Until then `PUSH_PROVIDER=console` prints each notification in the API log.
+
 ### Without Docker (default in `.env.example`)
 
 `corepack pnpm dev` first starts a local database server: **PGlite**, real PostgreSQL with PostGIS compiled to
@@ -134,6 +166,7 @@ corepack pnpm test
 | `apps/api/src/trips/detect.test.ts` | Trip detection: long vs short stops, GPS drift while parked, data gaps, glitches, ongoing trips |
 | `apps/api/src/alerts/evaluate.test.ts` | Each alert rule: thresholds, once per incident, re-arming, zone enter/exit, Tunis time windows incl. midnight |
 | `apps/api/test/alerts.test.ts` | Zones and rules (validation, permissions, other orgs' zones/vehicles refused), alerts created from device data, inbox and "handled", RLS, trips report and its isolation |
+| `apps/api/test/push.test.ts` | Push targeting: only members of the alert's organization, in their language, preferences (off / urgent only), removed members and signed-out phones get nothing, no coordinates in notifications |
 | `apps/simulator/src/engine.test.ts` | Scenarios stay around Tunis, plausible speeds, motorway speeding, stops, disconnections, battery drain, Traccar JSON format |
 | `packages/shared/src/shared.test.ts` | Plates, IMEI Luhn, device status, permission matrix |
 
@@ -147,6 +180,7 @@ Tests run against PGlite by default. To run them against the Docker PostgreSQL, 
 | `corepack pnpm dev:api` | API only |
 | `corepack pnpm preview` | Build once, then run the optimised app (fast pages) |
 | `corepack pnpm sim` | Simulated vehicles ([DÉMO]) |
+| `corepack pnpm mobile` / `mobile:web` | Mobile app (Expo Go on a phone) / its web preview |
 | `corepack pnpm db:check` | Check the local database opens, print row counts |
 | `corepack pnpm basemap` | Download or extend the self-hosted Tunisia basemap |
 | `corepack pnpm typecheck` | TypeScript across the repo |

@@ -29,6 +29,9 @@ const EnvSchema = z.object({
   RATE_LIMIT_GLOBAL_PER_MIN: z.coerce.number().int().positive().default(300),
   /** Shared secret for POST /api/ingest/traccar (Traccar forwarding and the simulator). Unset = ingest disabled. */
   INGEST_SECRET: z.preprocess((v) => (v === '' ? undefined : v), z.string().min(24, 'INGEST_SECRET must be at least 24 characters').optional()),
+  /** none = off, console = log only (development), expo = Expo Push Service (needs your approval and an Expo project). */
+  PUSH_PROVIDER: z.enum(['none', 'console', 'expo']).default('console'),
+  EXPO_ACCESS_TOKEN: z.preprocess((v) => (v === '' ? undefined : v), z.string().optional()),
   LOGIN_MAX_FAILURES: z.coerce.number().int().positive().default(5),
 });
 

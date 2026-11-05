@@ -1,0 +1,4 @@
+.expo/
+.expo-export/
+dist/
+web-build/

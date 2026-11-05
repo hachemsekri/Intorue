@@ -115,8 +115,8 @@ async function tiles() {
 }
 
 async function fonts() {
-  // Ranges covering Latin (incl. accents), punctuation, Arabic and Arabic presentation forms.
-  const ranges = ['0-255', '256-511', '512-767', '768-1023', '1536-1791', '1792-2047', '8192-8447', '64256-64511', '64512-64767', '64768-65023', '65024-65279', '65280-65535'];
+  // Ranges covering Latin (incl. accents), punctuation, Arabic, Arabic presentation forms and Tifinagh (Amazigh names).
+  const ranges = ['0-255', '256-511', '512-767', '768-1023', '1536-1791', '1792-2047', '8192-8447', '11520-11775', '64256-64511', '64512-64767', '64768-65023', '65024-65279', '65280-65535'];
   const stacks = ['Noto Sans Regular', 'Noto Sans Medium', 'Noto Sans Italic'];
   const jobs = stacks.flatMap((s) => ranges.map((r) => [s, r]));
   await pool(jobs, 8, async ([s, r]) => {

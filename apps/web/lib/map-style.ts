@@ -84,7 +84,9 @@ export function useBaseMap(container: RefObject<HTMLDivElement | null>, locale: 
         const msg = String((e as { error?: Error }).error?.message ?? '');
         if (!msg.includes('/map/tiles/')) console.error('[map]', msg || e);
       });
-      m.on('load', () => setReady(true));
+      // Ready once the style is parsed: a missing glyph range (rare scripts in OSM names) can delay "load" forever.
+      m.once('style.load', () => setReady(true));
+      m.once('load', () => setReady(true));
       if (process.env.NODE_ENV !== 'production') (window as unknown as { __winouMap?: MlMap }).__winouMap = m; // dev debugging
       created = m;
       setHasBasemap(cfg.hasBasemap);
