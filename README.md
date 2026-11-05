@@ -1,4 +1,4 @@
-# Winou: GPS tracking platform (working name)
+# Intorue: GPS tracking platform
 
 Track cars, motorcycles and scooters in Tunisia. Web app (French, Arabic RTL, English), mobile app (Milestone 4), API.
 The brand name lives in one place: `packages/config/src/index.ts`.

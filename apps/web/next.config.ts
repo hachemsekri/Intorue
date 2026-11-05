@@ -9,6 +9,8 @@ if (existsSync(rootEnv)) process.loadEnvFile(rootEnv);
 const API = process.env.API_INTERNAL_URL ?? 'http://localhost:4000';
 
 const config: NextConfig = {
+  // A second dev server can run beside `preview` without sharing the build folder.
+  distDir: process.env.NEXT_DIST_DIR ?? '.next',
   reactStrictMode: true,
   poweredByHeader: false,
   // The browser talks only to this origin; /api is proxied to the API so auth cookies stay first-party.

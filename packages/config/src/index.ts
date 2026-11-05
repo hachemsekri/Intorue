@@ -1,11 +1,11 @@
 /**
  * Brand settings. Change the product name here only; web, mobile, emails and the API read it from this file.
- * "Winou" is a working name ([NOM DE LA MARQUE]).
+ * Product name: Intorue ("into" + "rue", the street). Earlier working name: Winou.
  */
 export const brand = {
-  name: 'Winou',
+  name: 'Intorue',
   /** Two-part wordmark, styled like the designs: first part white/navy, second part turquoise. */
-  wordmark: ['Win', 'ou'] as const,
+  wordmark: ['Into', 'rue'] as const,
   supportEmail: 'support@example.tn', // PLACEHOLDER
   colors: {
     navy: '#0E2A47',

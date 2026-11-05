@@ -1,26 +1,51 @@
 {
   "expo": {
-    "name": "Winou",
-    "slug": "winou",
-    "scheme": "winou",
+    "name": "Intorue",
+    "slug": "intorue",
+    "scheme": "intorue",
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "backgroundColor": "#F3F6F9",
     "ios": {
-      "bundleIdentifier": "tn.winou.app",
+      "bundleIdentifier": "tn.intorue.app",
       "supportsTablet": false,
-      "infoPlist": { "CFBundleAllowMixedLocalizations": true }
+      "infoPlist": {
+        "CFBundleAllowMixedLocalizations": true
+      }
     },
     "android": {
-      "package": "tn.winou.app",
-      "adaptiveIcon": { "backgroundColor": "#0E2A47" }
+      "package": "tn.intorue.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#0E2A47"
+      }
     },
-    "web": { "bundler": "metro", "output": "single" },
-    "locales": { "ar": { "rtl": true } },
-    "extra": { "supportsRTL": true },
-    "plugins": ["expo-router", "expo-secure-store", "expo-localization", ["expo-notifications", { "color": "#14B8A6" }]],
-    "experiments": { "typedRoutes": false }
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "locales": {
+      "ar": {
+        "rtl": true
+      }
+    },
+    "extra": {
+      "supportsRTL": true
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-localization",
+      [
+        "expo-notifications",
+        {
+          "color": "#14B8A6"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": false
+    }
   }
 }

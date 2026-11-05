@@ -21,7 +21,7 @@ const EnvSchema = z.object({
   REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().default(30),
   WEB_URL: z.string().url().default('http://localhost:3000'),
   SMTP_URL: z.string().optional(),
-  MAIL_FROM: z.string().default('Winou <no-reply@localhost>'),
+  MAIL_FROM: z.string().default('Intorue <no-reply@localhost>'),
   COOKIE_SECURE: bool.optional(),
   CORS_ORIGINS: z.string().default(''),
   TRUST_PROXY: bool.default('false'),

@@ -58,3 +58,32 @@
   direction: ltr;
   unicode-bidi: isolate;
 }
+
+/* Home page motion. The hidden state is only set by script (components/home/reveal.tsx). */
+@media (prefers-reduced-motion: no-preference) {
+  [data-reveal] {
+    transition:
+      opacity 0.7s cubic-bezier(0.2, 0.7, 0.2, 1),
+      transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  [data-reveal].reveal-wait {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  .home-drift {
+    animation: home-drift 24s ease-in-out infinite alternate;
+  }
+  @keyframes home-drift {
+    from { transform: scale(1); }
+    to { transform: scale(1.08); }
+  }
+}
+
+/* Arabic is a joined script: negative letter-spacing breaks it. */
+:lang(ar) h1,
+:lang(ar) h2,
+:lang(ar) h3,
+:lang(ar) p,
+:lang(ar) span {
+  letter-spacing: normal !important;
+}

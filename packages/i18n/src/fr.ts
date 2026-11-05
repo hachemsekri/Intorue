@@ -231,6 +231,121 @@ export const fr = {
     restartForDirection: 'Redémarrez l’app pour appliquer le sens de lecture.',
     noPosition: 'Pas de position',
   },
+  home: {
+    metaTitle: 'Intorue · Suivi GPS de véhicules en Tunisie',
+    metaDescription: 'Suivez vos voitures, motos et trottinettes en temps réel partout en Tunisie : carte en direct, historique des trajets et alertes.',
+    nav: { live: 'Démonstration', fleet: 'Carte', trips: 'Trajets', alerts: 'Alertes', faq: 'Questions', signIn: 'Se connecter', signUp: 'Créer un compte', open: 'Ouvrir l’application' },
+    hero: {
+      title: 'Vos véhicules, rue par rue.',
+      lead: 'Intorue suit vos voitures, motos et trottinettes en temps réel partout en Tunisie, garde chaque trajet et vous prévient dès que quelque chose cloche.',
+      primary: 'Créer un compte',
+      secondary: 'Se connecter',
+    },
+    demo: {
+      label: 'Démonstration en direct',
+      choose: 'Choisissez une situation',
+      simulated: 'Données simulées, carte réelle.',
+      replay: 'Rejouer',
+      scenarios: {
+        speeding: 'Excès de vitesse sur l’A1',
+        zone: 'Sortie de Sidi Bou Saïd',
+        night: 'Départ à 2 h du matin',
+        offline: 'Boîtier débranché',
+      },
+      zoneName: 'Sidi Bou Saïd',
+      noScript: 'La démonstration a besoin de JavaScript. Elle montre un véhicule qui roule sur la carte de Tunis et l’alerte qui part au bon moment.',
+    },
+    fleet: {
+      title: 'Toute la flotte d’un coup d’œil',
+      text: 'Chaque véhicule apparaît sur la carte avec son état, sa vitesse et l’heure de sa dernière position. Filtrez les voitures, les motos ou les trottinettes, cherchez une immatriculation, ouvrez la fiche du véhicule.',
+      points: [
+        'Mis à jour en direct, sans recharger la page.',
+        'Immatriculations tunisiennes reconnues, standard ou RS, saisies en lettres latines ou en arabe.',
+        'Une carte hébergée par nos soins, aux noms de rues en français, en arabe ou en anglais.',
+      ],
+      photoAlt: 'L’avenue Habib Bourguiba à Tunis, avec voitures, tramway et palmiers',
+    },
+    trips: {
+      title: 'Chaque trajet, minute par minute',
+      text: 'Départs, arrêts, distance, vitesse maximale : Intorue reconstruit les trajets à partir des positions et les range par jour. Exportez-les en CSV pour la comptabilité ou pour régler un litige.',
+      photoAlt: 'Portique de l’autoroute A1 vers Hammamet et Tunis, avec un panneau 90 km/h',
+      sample: 'Renault Clio · 245 TUN 7812 · mardi',
+      kpis: { distance: '312 km', driving: '5 h 40', max: '128 km/h', events: '2' },
+      timeline: [
+        ['08:12', 'Départ', 'Agence, Tunis'],
+        ['09:04', 'Excès de vitesse · 128 km/h', 'Autoroute A1'],
+        ['10:30', 'Arrêt · 45 min', 'Hammamet'],
+        ['13:55', 'Sortie de la zone autorisée', 'Enfida'],
+        ['15:10', 'Retour dans la zone', 'Hammamet'],
+        ['18:50', 'Arrivée', 'Agence, Tunis'],
+      ],
+    },
+    alerts: {
+      title: 'Six alertes, réglées par vous',
+      text: 'Choisissez les véhicules, les seuils et les horaires. Chaque alerte part une seule fois par incident, sur le site et en notification sur le téléphone.',
+      list: [
+        ['Excès de vitesse', 'Au-delà de la limite du véhicule ou de la vôtre, pendant au moins 15 secondes.'],
+        ['Sortie de zone', 'Un cercle ou un polygone tracé sur la carte : l’agence, un quartier, un gouvernorat.'],
+        ['Entrée dans une zone', 'Pour savoir quand un véhicule arrive au dépôt ou chez un client.'],
+        ['Mouvement hors horaires', 'Un véhicule qui roule la nuit ou le dimanche, à l’heure de Tunis.'],
+        ['Boîtier hors ligne', 'Plus aucune donnée depuis 15 minutes : débranché, sans réseau ou en panne.'],
+        ['Batterie faible', 'Quand le boîtier ou la trottinette communique son niveau.'],
+      ],
+      inbox: 'Une boîte « À traiter » et « Traitées » garde la trace de qui a réagi, et quand.',
+      photoAlt: 'Porte bleue cloutée de Sidi Bou Saïd sous un arc noir et blanc',
+    },
+    who: {
+      title: 'Pour un véhicule ou pour cent',
+      rows: [
+        ['Particuliers', 'Votre voiture, la moto de votre fils, votre trottinette : sachez où elles sont et soyez prévenu si elles bougent sans vous.'],
+        ['Agences de location', 'Voyez où sont les voitures louées, repérez une sortie de zone ou un boîtier débranché. La connexion avec Karia, logiciel de gestion de location, est prévue.'],
+        ['Livraison et flottes', 'Suivez coursiers et camionnettes, vérifiez les arrêts et les horaires, donnez un accès à chaque membre de l’équipe : propriétaire, gestionnaire ou lecteur.'],
+      ],
+      photoAlt: 'Un scooter garé devant des affiches dans une rue de Tunis',
+    },
+    mobile: {
+      title: 'La même carte, dans la poche',
+      text: 'L’application Android et iPhone affiche la carte, la flotte, les trajets du jour et les alertes, avec une notification dès qu’une alerte part.',
+      note: 'L’application est en préparation et arrivera bientôt sur les stores.',
+    },
+    privacy: {
+      title: 'Vos positions restent à vous',
+      list: [
+        'Nous ne vendons ni ne partageons les données de localisation.',
+        'Chaque client ne voit que ses véhicules : c’est vérifié à chaque requête, puis une seconde fois par la base de données.',
+        'Vous choisissez combien de temps l’historique est gardé, de 7 à 365 jours.',
+        'Les actions sensibles sont journalisées : association d’un boîtier, changement de rôle, règles d’alerte.',
+        'Intorue ne coupe jamais un moteur à distance : aucune commande n’est envoyée aux véhicules.',
+      ],
+    },
+    name: {
+      title: 'Un nom pris à nos plaques de rue',
+      text: 'Sur les plaques émaillées de Tunis, نهج est écrit au-dessus de RUE. Intorue, c’est cette rue-là : celle où roule votre véhicule en ce moment.',
+      photoAlt: 'Plaque émaillée bilingue « نهج سعد زغلول · Rue Saad Zagloul » à Tunis',
+    },
+    faq: {
+      title: 'Questions fréquentes',
+      items: [
+        ['Quels boîtiers GPS sont compatibles ?', 'Intorue reçoit les données par Traccar, qui comprend plus de 200 protocoles de boîtiers. La validation avec les modèles vendus en Tunisie est en cours : indiquez-nous le modèle du vôtre.'],
+        ['Que faut-il pour commencer ?', 'Un compte, un boîtier GPS avec une carte SIM data, et son identifiant, souvent l’IMEI à 15 chiffres. Vous l’associez au véhicule depuis la page Boîtiers GPS.'],
+        ['Combien de temps l’historique est-il gardé ?', '90 jours par défaut. Le propriétaire du compte peut choisir entre 7 et 365 jours ; les positions plus anciennes sont supprimées automatiquement.'],
+        ['Plusieurs personnes peuvent-elles utiliser le même compte ?', 'Oui. Invitez votre équipe par e-mail avec un rôle : propriétaire, gestionnaire ou lecteur.'],
+        ['Le site existe-t-il en arabe ?', 'Oui. Le site et l’application sont en français, en arabe, de droite à gauche, et en anglais.'],
+      ],
+    },
+    cta: {
+      title: 'Mettez votre flotte sur la carte',
+      text: 'Créez un compte, ajoutez un véhicule et son boîtier : la première position s’affiche dès qu’il capte.',
+      photoAlt: 'La Goulette au coucher du soleil, sous un ciel d’orage',
+    },
+    footer: {
+      product: 'Produit',
+      account: 'Compte',
+      mapData: 'Fond de carte © OpenStreetMap, Protomaps.',
+      photos: 'Photographies',
+      rights: 'Positions et alertes de démonstration simulées.',
+    },
+  },
   vehicles: {
     title: 'Véhicules',
     add: 'Ajouter un véhicule',
@@ -381,5 +496,5 @@ export const fr = {
   },
 };
 
-type Widen<T> = { [K in keyof T]: T[K] extends string ? string : Widen<T[K]> };
+type Widen<T> = { [K in keyof T]: T[K] extends string ? string : T[K] extends readonly (infer U)[] ? Widen<U>[] : Widen<T[K]> };
 export type Messages = Widen<typeof fr>;

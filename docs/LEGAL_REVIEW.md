@@ -27,4 +27,4 @@ The app contains **placeholders only**. No final legal text has been written.
 12. Confirmation that **no remote vehicle immobilisation** is offered. This is excluded by design and should be stated in the terms.
 
 ## Brand
-13. Trademark search for the final brand name (currently the working name "Winou").
+13. Trademark search for the brand name "Intorue" (Tunisia: INNORPI), and the domain names.

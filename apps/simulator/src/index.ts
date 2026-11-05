@@ -1,5 +1,5 @@
 /**
- * Winou device simulator. SAMPLE DATA ONLY.
+ * Intorue device simulator. SAMPLE DATA ONLY.
  *
  * Sends simulated GPS fixes through the same path as real devices:
  *   --target api      (default) POST to the API ingest endpoint, in Traccar's forwarding format,
@@ -98,7 +98,7 @@ async function main() {
   const chosen = o.only ? SCENARIOS.filter((_, i) => o.only!.includes(i)) : SCENARIOS;
   const vehicles = chosen.map((s, i) => new SimVehicle(s, 1000 + i));
 
-  console.log(`[DÉMO] Simulateur Winou: ${vehicles.length} véhicules simulés, un point toutes les ${o.intervalS} s → ${o.target}`);
+  console.log(`[DÉMO] Simulateur Intorue : ${vehicles.length} véhicules simulés, un point toutes les ${o.intervalS} s → ${o.target}`);
   vehicles.forEach((v, i) => console.log(`  ${i + 1}. ${v.scenario.label}  (IMEI ${v.scenario.imei})`));
 
   if (o.historyH > 0 && o.target === 'api') {
@@ -118,7 +118,8 @@ async function main() {
     for (let i = 0; i < backlog.length; i += 100) {
       const r = await sendApi(o.api, secret!, backlog.slice(i, i + 100));
       accepted += r.accepted;
-      if ((i / 100) % 20 === 0) process.stdout.write(`  ${Math.min(i + 100, backlog.length)}/${backlog.length}`);
+      if ((i / 100) % 20 === 0) process.stdout.write(`  ${Math.min(i + 100, backlog.length)}/${backlog.length}
+`);
     }
     console.log(`Historique envoyé : ${accepted} points acceptés.          `);
   }

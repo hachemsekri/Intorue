@@ -16,7 +16,7 @@ export interface ResolvedStyle {
 
 const PLAIN: ResolvedStyle = {
   hasBasemap: false,
-  attribution: 'Winou · fond de carte non configuré',
+  attribution: 'Intorue · fond de carte non configuré',
   style: { version: 8, sources: {}, layers: [{ id: 'bg', type: 'background', paint: { 'background-color': '#EDF1F5' } }] },
 };
 
@@ -55,7 +55,11 @@ export async function resolveStyle(locale: string): Promise<ResolvedStyle> {
  * Creates a MapLibre map in `container` with the configured basemap, attribution, zoom
  * buttons and the right-to-left text plugin for Arabic labels.
  */
-export function useBaseMap(container: RefObject<HTMLDivElement | null>, locale: string, opts: { center?: [number, number]; zoom?: number } = {}) {
+export function useBaseMap(
+  container: RefObject<HTMLDivElement | null>,
+  locale: string,
+  opts: { center?: [number, number]; zoom?: number; controls?: boolean; compactAttribution?: boolean } = {},
+) {
   const [map, setMap] = useState<MlMap | null>(null);
   const [ml, setMl] = useState<typeof import('maplibre-gl') | null>(null);
   const [ready, setReady] = useState(false);
@@ -77,8 +81,11 @@ export function useBaseMap(container: RefObject<HTMLDivElement | null>, locale: 
         zoom: optsRef.current.zoom ?? 11,
         attributionControl: false,
       });
-      m.addControl(new mod.AttributionControl({ compact: false, ...(cfg.attribution ? { customAttribution: cfg.attribution } : {}) }), 'bottom-left');
-      m.addControl(new mod.NavigationControl({ showCompass: false }), 'bottom-right');
+      m.addControl(
+        new mod.AttributionControl({ compact: !!optsRef.current.compactAttribution, ...(cfg.attribution ? { customAttribution: cfg.attribution } : {}) }),
+        'bottom-left',
+      );
+      if (optsRef.current.controls !== false) m.addControl(new mod.NavigationControl({ showCompass: false }), 'bottom-right');
       // Outside the downloaded area, deep-zoom tiles do not exist: ignore those 404s.
       m.on('error', (e) => {
         const msg = String((e as { error?: Error }).error?.message ?? '');
@@ -89,6 +96,10 @@ export function useBaseMap(container: RefObject<HTMLDivElement | null>, locale: 
       m.once('load', () => setReady(true));
       if (process.env.NODE_ENV !== 'production') (window as unknown as { __winouMap?: MlMap }).__winouMap = m; // dev debugging
       created = m;
+      // Follow the container's size (it may be laid out after the map is created).
+      const ro = new ResizeObserver(() => m.resize());
+      ro.observe(container.current);
+      m.once('remove', () => ro.disconnect());
       setHasBasemap(cfg.hasBasemap);
       setMl(mod);
       setMap(m);

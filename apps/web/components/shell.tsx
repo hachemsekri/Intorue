@@ -63,9 +63,9 @@ export function Shell({ children }: { children: ReactNode }) {
           open ? 'flex' : 'hidden',
         )}
       >
-        <div className="mb-10 hidden ps-3 lg:block">
+        <Link href="/" className="mb-10 hidden ps-3 lg:block" aria-label="Intorue">
           <Wordmark />
-        </div>
+        </Link>
         <SidebarNav />
         <SidebarFooter />
       </aside>

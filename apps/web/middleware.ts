@@ -9,7 +9,7 @@ const PUBLIC = ['/login', '/signup', '/forgot-password', '/reset-password', '/in
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const hasSession = req.cookies.has('winou_session') || req.cookies.has('winou_at');
-  const isPublic = PUBLIC.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+  const isPublic = pathname === '/' || PUBLIC.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 
   if (!hasSession && !isPublic) {
     const url = req.nextUrl.clone();
