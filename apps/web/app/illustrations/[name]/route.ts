@@ -2,12 +2,11 @@ import { citySvg } from '@/components/home/city';
 
 /**
  * Cached city illustrations for the home page (drawn once at build time).
- *   /illustrations/city-hero.svg · city-follow.svg · city-phone.svg
+ *   /illustrations/city-hero.svg · city-follow.svg (map fallback)
  */
 const VARIANTS: Record<string, () => string> = {
   'city-hero.svg': () => citySvg(11),
   'city-follow.svg': () => citySvg(29),
-  'city-phone.svg': () => citySvg(47, true),
 };
 
 export const dynamic = 'force-static';

@@ -237,17 +237,45 @@ html:has(.ih) {
 }
 .ih .tilt {
   position: absolute;
-  inset: -14% -12% -18%;
+  inset: -72% -22% -22%;
   transform-origin: 50% 62%;
-  transform: rotateX(40deg) scale(1.16);
-  will-change: transform;
+  transform: rotateX(46deg);
 }
-.ih .city {
+.ih .hero-city {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   display: block;
+}
+/* The small car and its line: the only moving parts of the opening screen (CSS only). */
+.ih .hero-trace {
+  fill: none;
+  stroke: var(--teal);
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 45;
+}
+.ih .hero-car {
+  offset-path: path('M-80 235H860V-90');
+  offset-rotate: auto;
+  offset-distance: 55%;
+}
+@supports not (offset-path: path('M0 0')) {
+  .ih .hero-car {
+    display: none;
+  }
+}
+.ih .hero::before {
+  content: '';
+  position: absolute;
+  z-index: 2;
+  inset: 0 0 auto;
+  height: 170px;
+  pointer-events: none;
+  background: linear-gradient(to bottom, rgba(6, 15, 31, 0.9), rgba(6, 15, 31, 0));
 }
 .ih .hero::after {
   content: '';
@@ -256,7 +284,7 @@ html:has(.ih) {
   left: 0;
   right: 0;
   bottom: 0;
-  height: 72%;
+  height: 62%;
   pointer-events: none;
   background: linear-gradient(to bottom, rgba(6, 15, 31, 0), rgba(6, 15, 31, 0.82) 42%, rgba(6, 15, 31, 0.97));
 }
@@ -354,7 +382,7 @@ html:has(.ih) {
   position: absolute;
   z-index: 4;
   inset-inline-end: var(--gut-r);
-  bottom: 12px;
+  bottom: 34px;
   font-size: 13px;
   color: var(--mute);
 }
@@ -369,21 +397,6 @@ html:has(.ih) {
   .ih .note {
     bottom: 8px;
   }
-}
-
-/* The route trace, the vehicle and its halo (shared by the three city views). */
-.ih .trace {
-  fill: none;
-  stroke: var(--teal);
-  stroke-width: 10;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-.ih .halo {
-  fill: var(--teal);
-  fill-opacity: 0.24;
-  transform-box: fill-box;
-  transform-origin: center;
 }
 
 /* ---------- Follow scene ---------- */
@@ -525,14 +538,56 @@ html:has(.ih) {
   overflow: hidden;
   perspective: 1300px;
 }
-.ih .cam {
+/* Real maps (created only when their section is reached). */
+.ih .map {
   position: absolute;
-  inset: -22% -16%;
-  transform-origin: 50% 55%;
-  transform: rotateX(16deg) rotateZ(-5deg) scale(1.08);
-  will-change: transform;
+  inset: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 0.6s;
+}
+.ih .map-ready .map {
+  opacity: 1;
+}
+.ih .map-failed .map {
+  opacity: 0.5;
+  background: url('/illustrations/city-follow.svg') center / cover no-repeat;
+}
+.ih .map .maplibregl-canvas-container,
+.ih .map .maplibregl-canvas {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+.ih .map .maplibregl-canvas:focus {
+  outline: none;
+}
+.ih .map-off {
+  position: absolute;
+  z-index: 5;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(420px, calc(100% - 32px));
+  background: var(--white);
+  color: var(--ink);
+  border-radius: 14px;
+  padding: 16px 18px;
+  font-weight: 700;
+  text-align: center;
+}
+.ih .view-switch {
+  position: absolute;
+  z-index: 4;
+  inset-inline-start: 16px;
+  top: 18px;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.35);
+}
+.ih .view-switch button {
+  padding: 0 16px;
 }
 .ih .alert-pop {
+  pointer-events: none;
   position: absolute;
   z-index: 4;
   top: 22px;
@@ -556,7 +611,7 @@ html:has(.ih) {
   position: absolute;
   z-index: 4;
   inset-inline-start: 16px;
-  bottom: 14px;
+  bottom: 30px;
   color: var(--white);
   background: var(--night);
   padding: 3px 9px;
@@ -593,6 +648,10 @@ html:has(.ih) {
   }
   .ih .log {
     display: none;
+  }
+  .ih .view-switch {
+    top: auto;
+    bottom: 62px;
   }
   .ih .alert-pop {
     font-size: 15px;
@@ -1099,6 +1158,13 @@ html:has(.ih) {
 .ih .fl a:hover {
   color: var(--teal);
 }
+.ih .fl .credits a {
+  color: inherit;
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  padding-block: 0;
+}
 .ih .mega {
   font-size: 21vw;
   font-weight: 900;
@@ -1113,8 +1179,11 @@ html:has(.ih) {
 
 /* ---------- Entrances (CSS only, so content shows even if scripts fail) ---------- */
 @media (prefers-reduced-motion: no-preference) {
-  .ih .tilt {
-    animation: ih-tilt 2.2s var(--ease) backwards;
+  .ih .hero-trace {
+    animation: ih-trace 26s linear -9s infinite;
+  }
+  .ih .hero-car {
+    animation: ih-drive 26s linear -9s infinite;
   }
   .ih h1 i {
     animation: ih-rise 1.05s var(--ease) 0.26s backwards;
@@ -1126,13 +1195,21 @@ html:has(.ih) {
     animation: ih-fade 0.7s ease-out backwards;
     animation-delay: calc(0.52s + var(--i, 0) * 55ms);
   }
-  .ih .halo {
-    animation: ih-halo 1.6s linear infinite;
+}
+@keyframes ih-trace {
+  from {
+    stroke-dashoffset: 100;
+  }
+  to {
+    stroke-dashoffset: 0;
   }
 }
-@keyframes ih-tilt {
+@keyframes ih-drive {
   from {
-    transform: rotateX(0deg) scale(1.02);
+    offset-distance: 0%;
+  }
+  to {
+    offset-distance: 100%;
   }
 }
 @keyframes ih-rise {
@@ -1146,26 +1223,6 @@ html:has(.ih) {
     transform: translateY(16px);
   }
 }
-@keyframes ih-halo {
-  from {
-    transform: scale(0.7);
-    opacity: 1;
-  }
-  to {
-    transform: scale(1.45);
-    opacity: 0;
-  }
-}
-
-/* Phones: fewer moving SVG parts. */
-@media (max-width: 760px) {
-  .ih .others {
-    display: none;
-  }
-  .ih .halo {
-    animation: none;
-  }
-}
 
 @media (prefers-reduced-motion: reduce) {
   html:has(.ih) {
@@ -1174,9 +1231,6 @@ html:has(.ih) {
   .ih .plaque.flip,
   .ih .is-live .ppush {
     animation: none;
-  }
-  .ih .cam {
-    transform: none;
   }
   .ih *,
   .ih *::before,

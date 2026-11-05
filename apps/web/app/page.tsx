@@ -11,6 +11,7 @@ import { HeroCity } from '@/components/home/hero-city';
 import { ReservationForm } from '@/components/home/reservation-form';
 import { Reveal } from '@/components/home/reveal';
 import { LOCALE_COOKIE } from '@/lib/locale';
+import { MAP_CREDITS } from '@/lib/map-credits';
 import './home.css';
 
 const archivo = Archivo({ subsets: ['latin'], axes: ['wdth'], variable: '--font-archivo', display: 'swap' });
@@ -176,7 +177,17 @@ export default async function Home() {
             )}
             <a href="#reserver">{h.nav.reserve}</a>
           </nav>
-          <span>{h.footer.note}</span>
+          <span className="credits">
+            {h.footer.note}. {h.footer.maps}{' '}
+            {MAP_CREDITS.map((c, i) => (
+              <span key={c.href}>
+                {i > 0 && ', '}
+                <a href={c.href} target="_blank" rel="noopener noreferrer">
+                  {c.label}
+                </a>
+              </span>
+            ))}
+          </span>
         </div>
         <MegaWordmark parts={brand.wordmark} />
       </footer>
