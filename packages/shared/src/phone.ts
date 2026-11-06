@@ -18,6 +18,3 @@ export function normalizePhone(input: string): string | null {
   if (digits.startsWith('+216')) return /^\+216[2-9]\d{7}$/.test(digits) ? digits : null;
   return /^\+[1-9]\d{7,14}$/.test(digits) ? digits : null;
 }
-
-export const RESERVATION_VEHICLES = ['car', 'moto', 'scooter', 'several'] as const;
-export type ReservationVehicle = (typeof RESERVATION_VEHICLES)[number];

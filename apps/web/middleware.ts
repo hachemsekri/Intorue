@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
-const PUBLIC = ['/login', '/signup', '/forgot-password', '/reset-password', '/invitation', '/embed'];
+const PUBLIC = ['/login', '/signup', '/forgot-password', '/reset-password', '/invitation', '/embed', '/confidentialite', '/conditions'];
 
 /**
  * UX redirect only: real authorization happens in the API on every request.

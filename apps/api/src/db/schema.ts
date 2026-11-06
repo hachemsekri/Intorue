@@ -223,9 +223,19 @@ export const reservations = pgTable('reservations', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: text('name').notNull(),
   phone: text('phone').notNull(),
-  vehicleType: text('vehicle_type').notNull(),
+  /** Older requests only; counts below replace it. */
+  vehicleType: text('vehicle_type'),
+  clientType: text('client_type'),
+  company: text('company'),
+  qtyCar: integer('qty_car').notNull().default(0),
+  qtyMoto: integer('qty_moto').notNull().default(0),
+  qtyTrot: integer('qty_trot').notNull().default(0),
+  /** Calculated by the server from the price list when the request was made. */
+  totalDt: integer('total_dt'),
+  savedDt: integer('saved_dt'),
   city: text('city'),
   locale: text('locale').notNull().default('fr'),
   status: text('status').notNull().default('new'),
   createdAt: ts('created_at').notNull().defaultNow(),
+  updatedAt: ts('updated_at'),
 });
