@@ -10,6 +10,7 @@
     "test": "echo \"web: no unit tests yet (UI smoke-tested in browser)\""
   },
   "dependencies": {
+    "@opennextjs/cloudflare": "^1.20.16",
     "@protomaps/basemaps": "5.7.2",
     "@winou/config": "workspace:*",
     "@winou/i18n": "workspace:*",
@@ -25,6 +26,7 @@
     "@types/react": "19.1.12",
     "@types/react-dom": "19.1.9",
     "tailwindcss": "4.1.13",
-    "typescript": "~5.7.2"
+    "typescript": "~5.7.2",
+    "wrangler": "^4.158.0"
   }
 }
