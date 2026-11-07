@@ -7,6 +7,7 @@
  */
 import { PRICING, quoteFor } from '@winou/config';
 import { LOCALES, normalizePhone } from '@winou/shared';
+import { quoteEmail } from './email';
 
 const MIN_FILL_MS = 3000;
 const PER_HOUR = 5;
@@ -14,8 +15,6 @@ const hits = new Map<string, number[]>();
 
 const clean = (s: unknown, max: number) =>
   typeof s === 'string' ? s.replace(/[\p{Cc}\p{Cf}]/gu, '').replace(/\s+/g, ' ').trim().slice(0, max) : '';
-
-const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } });
@@ -79,28 +78,12 @@ export async function POST(request: Request): Promise<Response> {
     return json(500, { code: 'server' });
   }
 
-  const rows: [string, string][] = [
-    ['Nom', name],
-    ['Téléphone', phone],
-    ['Type', clientType === 'company' ? `Entreprise : ${company}` : 'Particulier'],
-    ['Ville', city || '—'],
-    ['Voitures', String(car)],
-    ['Motos', String(moto)],
-    ['Trottinettes', String(trot)],
-    ['Total annoncé', `${quote.total} DT${quote.saved > 0 ? ` (économie ${quote.saved} DT)` : ''}`],
-    ['Langue', locale],
-  ];
-  const html = `<h2 style="font-family:sans-serif">Nouvelle demande de devis</h2>
-<table style="font-family:sans-serif;font-size:15px;border-collapse:collapse">${rows
-    .map(([k, val]) => `<tr><td style="padding:6px 16px 6px 0;color:#555">${esc(k)}</td><td style="padding:6px 0"><b>${esc(val)}</b></td></tr>`)
-    .join('')}</table>
-<p style="font-family:sans-serif"><a href="tel:${esc(phone)}">Appeler ${esc(phone)}</a></p>`;
-  const text = rows.map(([k, val]) => `${k} : ${val}`).join('\n');
+  const mail = quoteEmail({ name, phone, clientType, company, city, car, moto, trot, total: quote.total, saved: quote.saved, locale, receivedAt: new Date() });
 
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { authorization: `Bearer ${key}`, 'content-type': 'application/json' },
-    body: JSON.stringify({ from, to: [to], subject: `Demande de devis : ${name} (${quote.vehicles} véhicule${quote.vehicles > 1 ? 's' : ''})`, html, text }),
+    body: JSON.stringify({ from, to: [to], subject: mail.subject, html: mail.html, text: mail.text }),
   }).catch(() => null);
 
   if (!res || !res.ok) {
