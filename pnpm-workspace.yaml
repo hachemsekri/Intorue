@@ -8,4 +8,4 @@ allowBuilds:
   sharp: true
   unrs-resolver: true
   "@tailwindcss/oxide": true
-  workerd: set this to true or false
+  workerd: true
